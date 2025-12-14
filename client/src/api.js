@@ -37,3 +37,31 @@ export async function deleteSlot(id) {
   const res = await fetch(`${API_BASE}/slots/${id}`, { method: 'DELETE' });
   return handleResponse(res);
 }
+
+export async function fetchModels() {
+  const res = await fetch(`${API_BASE}/models`);
+  return handleResponse(res);
+}
+
+export async function createModel(payload) {
+  const res = await fetch(`${API_BASE}/models`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function updateModel(id, payload) {
+  const res = await fetch(`${API_BASE}/models/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteModel(id) {
+  const res = await fetch(`${API_BASE}/models/${id}`, { method: 'DELETE' });
+  return handleResponse(res);
+}

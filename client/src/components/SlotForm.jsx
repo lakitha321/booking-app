@@ -8,9 +8,9 @@ function toLocalInputValue(value) {
   return local.toISOString().slice(0, 16)
 }
 
-export default function SlotForm({ onSubmit, onCancel, initialData = null, submitting, mode }) {
+export default function SlotForm({ onSubmit, onCancel, initialData = null, submitting, mode, models = [] }) {
   const [form, setForm] = useState({
-    title: '',
+    modelId: '',
     startDateTime: '',
     endDateTime: '',
     notes: '',
@@ -20,12 +20,14 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
   useEffect(() => {
     if (initialData) {
       setForm({
-        title: initialData.title || '',
+        modelId: initialData.model?._id || initialData.model || '',
         startDateTime: toLocalInputValue(initialData.startDateTime),
         endDateTime: toLocalInputValue(initialData.endDateTime),
         notes: initialData.notes || '',
         isActive: Boolean(initialData.isActive),
       })
+    } else {
+      setForm({ modelId: '', startDateTime: '', endDateTime: '', notes: '', isActive: true })
     }
   }, [initialData])
 
@@ -42,15 +44,24 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
       <div className="form-row">
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          name="title"
-          type="text"
-          placeholder="Optional name for the slot"
-          value={form.title}
+        <label htmlFor="modelId">Model *</label>
+        <select
+          id="modelId"
+          name="modelId"
+          required
+          value={form.modelId}
           onChange={handleChange}
-        />
+          disabled={!models.length}
+        >
+          <option value="" disabled>
+            {models.length ? 'Select a model' : 'Create a model first'}
+          </option>
+          {models.map((model) => (
+            <option key={model._id} value={model._id}>
+              {model.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-row">

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const slotCreateSchema = z.object({
-  title: z.string().optional().default(""),
+  modelId: z.string().trim().min(1, "Model is required"),
   startDateTime: z.string().datetime(),
   endDateTime: z.string().datetime(),
   notes: z.string().optional().default(""),
