@@ -38,6 +38,34 @@ export async function deleteSlot(id) {
   return handleResponse(res);
 }
 
+export async function fetchReservations() {
+  const res = await fetch(`${API_BASE}/reservations`);
+  return handleResponse(res);
+}
+
+export async function createReservation(payload) {
+  const res = await fetch(`${API_BASE}/reservations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function updateReservation(id, payload) {
+  const res = await fetch(`${API_BASE}/reservations/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteReservation(id) {
+  const res = await fetch(`${API_BASE}/reservations/${id}`, { method: 'DELETE' });
+  return handleResponse(res);
+}
+
 export async function fetchModels() {
   const res = await fetch(`${API_BASE}/models`);
   return handleResponse(res);

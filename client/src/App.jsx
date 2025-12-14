@@ -6,11 +6,17 @@ import {
   deleteSlot,
   fetchModels,
   fetchSlots,
+  fetchReservations,
   updateModel,
+  createReservation,
+  updateReservation,
+  deleteReservation,
   updateSlot,
 } from './api'
 import ModelForm from './components/ModelForm'
 import ModelTable from './components/ModelTable'
+import ReservationForm from './components/ReservationForm'
+import ReservationTable from './components/ReservationTable'
 import SlotForm from './components/SlotForm'
 import SlotTable from './components/SlotTable'
 import {
@@ -52,21 +58,27 @@ export default function App() {
 
   const [slots, setSlots] = useState([])
   const [models, setModels] = useState([])
+  const [reservations, setReservations] = useState([])
 
   const [slotLoading, setSlotLoading] = useState(false)
   const [modelLoading, setModelLoading] = useState(false)
+  const [reservationLoading, setReservationLoading] = useState(false)
 
   const [slotError, setSlotError] = useState('')
   const [modelError, setModelError] = useState('')
+  const [reservationError, setReservationError] = useState('')
 
   const [slotSubmitting, setSlotSubmitting] = useState(false)
   const [modelSubmitting, setModelSubmitting] = useState(false)
+  const [reservationSubmitting, setReservationSubmitting] = useState(false)
 
   const [editingSlot, setEditingSlot] = useState(null)
   const [editingModel, setEditingModel] = useState(null)
+  const [editingReservation, setEditingReservation] = useState(null)
 
   const [slotFormReset, setSlotFormReset] = useState(0)
   const [modelFormReset, setModelFormReset] = useState(0)
+  const [reservationFormReset, setReservationFormReset] = useState(0)
 
   const [theme, setTheme] = useState(getPreferredTheme)
 
@@ -85,11 +97,17 @@ export default function App() {
     [models]
   )
 
+  const sortedReservations = useMemo(
+    () => [...reservations].sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime)),
+    [reservations]
+  )
+
   const activeSlots = useMemo(() => slots.filter((slot) => slot.isActive).length, [slots])
   const upcomingSlots = useMemo(
     () => slots.filter((slot) => new Date(slot.startDateTime) > new Date()).length,
     [slots]
   )
+  const totalReservations = useMemo(() => reservations.length, [reservations])
 
   const loadModels = async () => {
     setModelLoading(true)
@@ -117,9 +135,23 @@ export default function App() {
     }
   }
 
+  const loadReservations = async () => {
+    setReservationLoading(true)
+    setReservationError('')
+    try {
+      const data = await fetchReservations()
+      setReservations(data)
+    } catch (e) {
+      setReservationError(e.message)
+    } finally {
+      setReservationLoading(false)
+    }
+  }
+
   useEffect(() => {
     loadModels()
     loadSlots()
+    loadReservations()
   }, [])
 
   const handleSlotCreate = async (form) => {
@@ -215,6 +247,48 @@ export default function App() {
     }
   }
 
+  const handleReservationCreate = async (form) => {
+    setReservationSubmitting(true)
+    setReservationError('')
+    try {
+      const created = await createReservation(form)
+      setReservations((prev) => [...prev, created])
+      setEditingReservation(null)
+      setReservationFormReset((v) => v + 1)
+    } catch (e) {
+      setReservationError(e.message)
+    } finally {
+      setReservationSubmitting(false)
+    }
+  }
+
+  const handleReservationUpdate = async (form) => {
+    if (!editingReservation) return
+    setReservationSubmitting(true)
+    setReservationError('')
+    try {
+      const updated = await updateReservation(editingReservation._id, form)
+      setReservations((prev) => prev.map((r) => (r._id === updated._id ? updated : r)))
+      setEditingReservation(null)
+      setReservationFormReset((v) => v + 1)
+    } catch (e) {
+      setReservationError(e.message)
+    } finally {
+      setReservationSubmitting(false)
+    }
+  }
+
+  const handleReservationDelete = async (id) => {
+    if (!confirm('Delete this reservation?')) return
+    setReservationError('')
+    try {
+      await deleteReservation(id)
+      setReservations((prev) => prev.filter((r) => r._id !== id))
+    } catch (e) {
+      setReservationError(e.message)
+    }
+  }
+
   return (
     <div className="app-shell">
       <header>
@@ -272,6 +346,15 @@ export default function App() {
             <p className="stat-value">{models.length}</p>
           </div>
         </div>
+        <div className="stat-card">
+          <div className="stat-icon">
+            <CalendarIcon size={18} />
+          </div>
+          <div>
+            <p className="stat-label">Reservations</p>
+            <p className="stat-value">{totalReservations}</p>
+          </div>
+        </div>
       </div>
 
       <nav className="tabs">
@@ -280,6 +363,12 @@ export default function App() {
         </button>
         <button className={page === 'models' ? 'tab active' : 'tab'} onClick={() => setPage('models')}>
           <UsersIcon size={16} /> Models
+        </button>
+        <button
+          className={page === 'reservations' ? 'tab active' : 'tab'}
+          onClick={() => setPage('reservations')}
+        >
+          <CalendarIcon size={16} /> Reservations
         </button>
       </nav>
 
@@ -368,6 +457,51 @@ export default function App() {
             </div>
             {modelError && <div className="error">{modelError}</div>}
             <ModelTable models={sortedModels} onEdit={setEditingModel} onDelete={handleModelDelete} />
+          </div>
+        </div>
+      )}
+
+      {page === 'reservations' && (
+        <div className="grid two">
+          <div className="card">
+            <div className="control-bar">
+              <div>
+                <h2>
+                  <CalendarIcon size={18} /> {editingReservation ? 'Edit reservation' : 'Create reservation'}
+                </h2>
+                <p className="subtitle">Lookup a user by email and assign them to an available slot.</p>
+              </div>
+            </div>
+            {reservationError && <div className="error">{reservationError}</div>}
+            <ReservationForm
+              mode={editingReservation ? 'edit' : 'create'}
+              slots={sortedSlots.filter((slot) => slot.isActive)}
+              initialData={editingReservation}
+              onSubmit={editingReservation ? handleReservationUpdate : handleReservationCreate}
+              onCancel={() => setEditingReservation(null)}
+              submitting={reservationSubmitting}
+              resetSignal={reservationFormReset}
+            />
+            {!sortedSlots.length && <p className="helper">Create at least one slot to accept reservations.</p>}
+          </div>
+
+          <div className="card">
+            <div className="control-bar">
+              <h2>
+                <CalendarIcon size={18} /> Reservations
+              </h2>
+              <div className="section-actions">
+                <button className="btn secondary" onClick={loadReservations} disabled={reservationLoading}>
+                  <RefreshIcon size={16} /> {reservationLoading ? 'Refreshing…' : 'Reload'}
+                </button>
+              </div>
+            </div>
+            {reservationError && <div className="error">{reservationError}</div>}
+            <ReservationTable
+              reservations={sortedReservations}
+              onEdit={setEditingReservation}
+              onDelete={handleReservationDelete}
+            />
           </div>
         </div>
       )}

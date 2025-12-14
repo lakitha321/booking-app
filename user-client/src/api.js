@@ -45,3 +45,32 @@ export async function fetchModels(token) {
 export async function fetchSlots() {
   return request('/slots?active=true')
 }
+
+export async function fetchMyReservations(token) {
+  return request('/reservations/my/list', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export async function createMyReservation(token, body) {
+  return request('/reservations/my', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function updateMyReservation(token, id, body) {
+  return request(`/reservations/my/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+}
+
+export async function deleteMyReservation(token, id) {
+  return request(`/reservations/my/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
