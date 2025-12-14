@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const SlotSchema = new mongoose.Schema(
   {
-    title: { type: String, trim: true, default: "" },
+    model: { type: mongoose.Schema.Types.ObjectId, ref: "Model", required: true },
     startDateTime: { type: Date, required: true },
     endDateTime: { type: Date, required: true },
     notes: { type: String, trim: true, default: "" },
@@ -12,6 +12,6 @@ const SlotSchema = new mongoose.Schema(
 );
 
 // Helpful index (optional)
-SlotSchema.index({ startDateTime: 1, endDateTime: 1 });
+SlotSchema.index({ model: 1, startDateTime: 1, endDateTime: 1 });
 
 export default mongoose.model("Slot", SlotSchema);

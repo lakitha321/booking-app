@@ -15,7 +15,7 @@ export default function SlotTable({ slots, onEdit, onDelete }) {
       <table>
         <thead>
           <tr>
-            <th>Title</th>
+            <th>Model</th>
             <th>Start</th>
             <th>End</th>
             <th>Active</th>
@@ -26,7 +26,7 @@ export default function SlotTable({ slots, onEdit, onDelete }) {
         <tbody>
           {slots.map((slot) => (
             <tr key={slot._id}>
-              <td>{slot.title || '—'}</td>
+              <td>{slot.model?.name || '—'}</td>
               <td>{formatDate(slot.startDateTime)}</td>
               <td>{formatDate(slot.endDateTime)}</td>
               <td>
