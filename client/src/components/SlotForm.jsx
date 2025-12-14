@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { CalendarIcon, ClockIcon, NoteIcon, PowerIcon } from '../icons'
 
 function toLocalInputValue(value) {
   if (!value) return ''
@@ -8,7 +9,15 @@ function toLocalInputValue(value) {
   return local.toISOString().slice(0, 16)
 }
 
-export default function SlotForm({ onSubmit, onCancel, initialData = null, submitting, mode, models = [] }) {
+export default function SlotForm({
+  onSubmit,
+  onCancel,
+  initialData = null,
+  submitting,
+  mode,
+  models = [],
+  resetSignal,
+}) {
   const [form, setForm] = useState({
     modelId: '',
     startDateTime: '',
@@ -29,7 +38,7 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
     } else {
       setForm({ modelId: '', startDateTime: '', endDateTime: '', notes: '', isActive: true })
     }
-  }, [initialData])
+  }, [initialData, resetSignal])
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -44,7 +53,9 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
       <div className="form-row">
-        <label htmlFor="modelId">Model *</label>
+        <label htmlFor="modelId">
+          <CalendarIcon size={16} /> Model *
+        </label>
         <select
           id="modelId"
           name="modelId"
@@ -65,7 +76,9 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
       </div>
 
       <div className="form-row">
-        <label htmlFor="startDateTime">Start</label>
+        <label htmlFor="startDateTime">
+          <ClockIcon size={16} /> Start
+        </label>
         <input
           id="startDateTime"
           name="startDateTime"
@@ -77,7 +90,9 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
       </div>
 
       <div className="form-row">
-        <label htmlFor="endDateTime">End</label>
+        <label htmlFor="endDateTime">
+          <ClockIcon size={16} /> End
+        </label>
         <input
           id="endDateTime"
           name="endDateTime"
@@ -89,7 +104,9 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
       </div>
 
       <div className="form-row">
-        <label htmlFor="notes">Notes</label>
+        <label htmlFor="notes">
+          <NoteIcon size={16} /> Notes
+        </label>
         <textarea
           id="notes"
           name="notes"
@@ -107,7 +124,7 @@ export default function SlotForm({ onSubmit, onCancel, initialData = null, submi
             checked={form.isActive}
             onChange={handleChange}
           />
-          Active
+          <PowerIcon size={16} /> Active
         </label>
       </div>
 

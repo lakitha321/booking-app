@@ -81,12 +81,8 @@ router.put("/:id", async (req, res) => {
 
     const update = { ...parsed.data };
 
-    if (update.startDateTime) update.startDateTime = new Date(update.startDateTime);
-    if (update.endDateTime) update.endDateTime = new Date(update.endDateTime);
-
-    if (update.startDateTime && update.endDateTime && !(update.startDateTime < update.endDateTime)) {
-      return res.status(400).json({ error: "startDateTime must be before endDateTime" });
-    }
+    const slot = await Slot.findById(req.params.id);
+    if (!slot) return res.status(404).json({ error: "Not found" });
 
     if (update.modelId) {
       const model = await Model.findById(update.modelId);
@@ -95,8 +91,29 @@ router.put("/:id", async (req, res) => {
     }
     delete update.modelId;
 
-    const slot = await Slot.findByIdAndUpdate(req.params.id, update, { new: true }).populate("model");
-    if (!slot) return res.status(404).json({ error: "Not found" });
+    const nextModel = update.model ?? slot.model;
+    const nextStart = update.startDateTime ? new Date(update.startDateTime) : slot.startDateTime;
+    const nextEnd = update.endDateTime ? new Date(update.endDateTime) : slot.endDateTime;
+    const willBeActive = update.isActive ?? slot.isActive;
+
+    if (!(nextStart < nextEnd)) {
+      return res.status(400).json({ error: "startDateTime must be before endDateTime" });
+    }
+
+    if (willBeActive) {
+      const overlap = await Slot.findOne({
+        _id: { $ne: slot._id },
+        model: nextModel,
+        isActive: true,
+        startDateTime: { $lt: nextEnd },
+        endDateTime: { $gt: nextStart },
+      });
+      if (overlap) return res.status(409).json({ error: "Overlaps an existing active slot" });
+    }
+
+    slot.set({ ...update, startDateTime: nextStart, endDateTime: nextEnd, model: nextModel });
+    await slot.save();
+    await slot.populate("model");
 
     return res.json(slot);
   } catch {
