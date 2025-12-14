@@ -34,9 +34,11 @@ export default function ReservationTable({ reservations = [], onEdit, onDelete }
             </td>
             <td className="mono">{reservation.notes || '—'}</td>
             <td className="actions">
-              <button className="btn tertiary" onClick={() => onEdit(reservation)}>
-                Edit
-              </button>
+              {onEdit && (
+                <button className="btn tertiary" onClick={() => onEdit(reservation)}>
+                  Edit
+                </button>
+              )}
               <button className="btn ghost danger" onClick={() => onDelete(reservation._id)}>
                 <TrashIcon size={14} /> Delete
               </button>
