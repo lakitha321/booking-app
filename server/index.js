@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import slotsRouter from "./src/routes/slots.js";
 import modelsRouter from "./src/routes/models.js";
+import authRouter from "./src/routes/auth.js";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 app.use("/api/slots", slotsRouter);
 app.use("/api/models", modelsRouter);
+app.use("/api/auth", authRouter);
 
 const PORT = process.env.PORT || 5000;
 
