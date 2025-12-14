@@ -8,14 +8,11 @@ import {
   fetchSlots,
   fetchReservations,
   updateModel,
-  createReservation,
-  updateReservation,
   deleteReservation,
   updateSlot,
 } from './api'
 import ModelForm from './components/ModelForm'
 import ModelTable from './components/ModelTable'
-import ReservationForm from './components/ReservationForm'
 import ReservationTable from './components/ReservationTable'
 import SlotForm from './components/SlotForm'
 import SlotTable from './components/SlotTable'
@@ -70,15 +67,12 @@ export default function App() {
 
   const [slotSubmitting, setSlotSubmitting] = useState(false)
   const [modelSubmitting, setModelSubmitting] = useState(false)
-  const [reservationSubmitting, setReservationSubmitting] = useState(false)
 
   const [editingSlot, setEditingSlot] = useState(null)
   const [editingModel, setEditingModel] = useState(null)
-  const [editingReservation, setEditingReservation] = useState(null)
 
   const [slotFormReset, setSlotFormReset] = useState(0)
   const [modelFormReset, setModelFormReset] = useState(0)
-  const [reservationFormReset, setReservationFormReset] = useState(0)
 
   const [theme, setTheme] = useState(getPreferredTheme)
 
@@ -244,37 +238,6 @@ export default function App() {
       setSlots((prev) => prev.filter((slot) => slot.model?._id !== id && slot.model !== id))
     } catch (e) {
       setModelError(e.message)
-    }
-  }
-
-  const handleReservationCreate = async (form) => {
-    setReservationSubmitting(true)
-    setReservationError('')
-    try {
-      const created = await createReservation(form)
-      setReservations((prev) => [...prev, created])
-      setEditingReservation(null)
-      setReservationFormReset((v) => v + 1)
-    } catch (e) {
-      setReservationError(e.message)
-    } finally {
-      setReservationSubmitting(false)
-    }
-  }
-
-  const handleReservationUpdate = async (form) => {
-    if (!editingReservation) return
-    setReservationSubmitting(true)
-    setReservationError('')
-    try {
-      const updated = await updateReservation(editingReservation._id, form)
-      setReservations((prev) => prev.map((r) => (r._id === updated._id ? updated : r)))
-      setEditingReservation(null)
-      setReservationFormReset((v) => v + 1)
-    } catch (e) {
-      setReservationError(e.message)
-    } finally {
-      setReservationSubmitting(false)
     }
   }
 
@@ -462,47 +425,24 @@ export default function App() {
       )}
 
       {page === 'reservations' && (
-        <div className="grid two">
-          <div className="card">
-            <div className="control-bar">
-              <div>
-                <h2>
-                  <CalendarIcon size={18} /> {editingReservation ? 'Edit reservation' : 'Create reservation'}
-                </h2>
-                <p className="subtitle">Lookup a user by email and assign them to an available slot.</p>
-              </div>
-            </div>
-            {reservationError && <div className="error">{reservationError}</div>}
-            <ReservationForm
-              mode={editingReservation ? 'edit' : 'create'}
-              slots={sortedSlots.filter((slot) => slot.isActive)}
-              initialData={editingReservation}
-              onSubmit={editingReservation ? handleReservationUpdate : handleReservationCreate}
-              onCancel={() => setEditingReservation(null)}
-              submitting={reservationSubmitting}
-              resetSignal={reservationFormReset}
-            />
-            {!sortedSlots.length && <p className="helper">Create at least one slot to accept reservations.</p>}
-          </div>
-
-          <div className="card">
-            <div className="control-bar">
+        <div className="card">
+          <div className="control-bar">
+            <div>
               <h2>
                 <CalendarIcon size={18} /> Reservations
               </h2>
-              <div className="section-actions">
-                <button className="btn secondary" onClick={loadReservations} disabled={reservationLoading}>
-                  <RefreshIcon size={16} /> {reservationLoading ? 'Refreshing…' : 'Reload'}
-                </button>
-              </div>
+              <p className="subtitle">
+                Reservations are created by users. Review their selections or remove entries when needed.
+              </p>
             </div>
-            {reservationError && <div className="error">{reservationError}</div>}
-            <ReservationTable
-              reservations={sortedReservations}
-              onEdit={setEditingReservation}
-              onDelete={handleReservationDelete}
-            />
+            <div className="section-actions">
+              <button className="btn secondary" onClick={loadReservations} disabled={reservationLoading}>
+                <RefreshIcon size={16} /> {reservationLoading ? 'Refreshing…' : 'Reload'}
+              </button>
+            </div>
           </div>
+          {reservationError && <div className="error">{reservationError}</div>}
+          <ReservationTable reservations={sortedReservations} onDelete={handleReservationDelete} />
         </div>
       )}
     </div>

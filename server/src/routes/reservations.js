@@ -12,16 +12,35 @@ import {
 
 const router = express.Router();
 
-async function hydrateReservation(slotId, userId, notes) {
+function validateTimingWithinSlot(slot, start, end) {
+  if (!start || Number.isNaN(start.getTime()) || !end || Number.isNaN(end.getTime())) {
+    return "Invalid start or end time";
+  }
+
+  if (!(start < end)) return "startDateTime must be before endDateTime";
+
+  if (start < slot.startDateTime || end > slot.endDateTime) {
+    return "Reservation must fall within the slot availability window";
+  }
+
+  return null;
+}
+
+async function hydrateReservation(slotId, userId, notes, startDateTime, endDateTime) {
   const slot = await Slot.findById(slotId).populate("model");
   if (!slot) return { error: { code: 404, message: "Slot not found" } };
   if (!slot.isActive) return { error: { code: 400, message: "Slot is not active" } };
 
-  const existing = await Reservation.findOne({ slot: slot._id });
-  if (existing) return { error: { code: 409, message: "Slot already reserved" } };
-
   const user = await User.findById(userId);
   if (!user) return { error: { code: 404, message: "User not found" } };
+
+  const start = new Date(startDateTime);
+  const end = new Date(endDateTime);
+  const timingError = validateTimingWithinSlot(slot, start, end);
+  if (timingError) return { error: { code: 400, message: timingError } };
+
+  const duplicate = await Reservation.findOne({ user: user._id, slot: slot._id });
+  if (duplicate) return { error: { code: 409, message: "User already has a reservation for this slot" } };
 
   return {
     slot,
@@ -32,8 +51,8 @@ async function hydrateReservation(slotId, userId, notes) {
       userEmail: user.email,
       model: slot.model?._id || slot.model,
       slot: slot._id,
-      startDateTime: slot.startDateTime,
-      endDateTime: slot.endDateTime,
+      startDateTime: start,
+      endDateTime: end,
       notes: notes ?? "",
     },
   };
@@ -48,7 +67,13 @@ router.post("/my", requireAuth, async (req, res) => {
     const parsed = userReservationCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const hydrated = await hydrateReservation(parsed.data.slotId, req.userId, parsed.data.notes);
+    const hydrated = await hydrateReservation(
+      parsed.data.slotId,
+      req.userId,
+      parsed.data.notes,
+      parsed.data.startDateTime,
+      parsed.data.endDateTime
+    );
     if (hydrated.error) return res.status(hydrated.error.code).json({ error: hydrated.error.message });
 
     const reservation = await Reservation.create(hydrated.reservation);
@@ -78,17 +103,28 @@ router.put("/my/:id", requireAuth, async (req, res) => {
     const reservation = await Reservation.findOne({ _id: req.params.id, user: req.userId });
     if (!reservation) return res.status(404).json({ error: "Not found" });
 
-    if (parsed.data.slotId) {
-      const slot = await Slot.findById(parsed.data.slotId);
-      if (!slot) return res.status(404).json({ error: "Slot not found" });
-      if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
-      const conflict = await Reservation.findOne({ _id: { $ne: reservation._id }, slot: slot._id });
-      if (conflict) return res.status(409).json({ error: "Slot already reserved" });
-      reservation.slot = slot._id;
-      reservation.model = slot.model;
-      reservation.startDateTime = slot.startDateTime;
-      reservation.endDateTime = slot.endDateTime;
-    }
+    const slot = parsed.data.slotId
+      ? await Slot.findById(parsed.data.slotId)
+      : await Slot.findById(reservation.slot).populate("model");
+    if (!slot) return res.status(404).json({ error: "Slot not found" });
+    if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
+
+    const nextStart = parsed.data.startDateTime ? new Date(parsed.data.startDateTime) : reservation.startDateTime;
+    const nextEnd = parsed.data.endDateTime ? new Date(parsed.data.endDateTime) : reservation.endDateTime;
+    const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
+    if (timingError) return res.status(400).json({ error: timingError });
+
+    const duplicate = await Reservation.findOne({
+      _id: { $ne: reservation._id },
+      user: reservation.user,
+      slot: slot._id,
+    });
+    if (duplicate) return res.status(409).json({ error: "User already has a reservation for this slot" });
+
+    reservation.slot = slot._id;
+    reservation.model = slot.model;
+    reservation.startDateTime = nextStart;
+    reservation.endDateTime = nextEnd;
 
     if (parsed.data.notes !== undefined) reservation.notes = parsed.data.notes;
 
@@ -118,7 +154,13 @@ router.post("/", async (req, res) => {
     const user = await User.findOne({ email: parsed.data.userEmail.toLowerCase() });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const hydrated = await hydrateReservation(parsed.data.slotId, user._id, parsed.data.notes);
+    const hydrated = await hydrateReservation(
+      parsed.data.slotId,
+      user._id,
+      parsed.data.notes,
+      parsed.data.startDateTime,
+      parsed.data.endDateTime
+    );
     if (hydrated.error) return res.status(hydrated.error.code).json({ error: hydrated.error.message });
 
     const reservation = await Reservation.create(hydrated.reservation);
@@ -165,17 +207,28 @@ router.put("/:id", async (req, res) => {
       reservation.userName = `${user.firstName} ${user.lastName}`.trim();
     }
 
-    if (parsed.data.slotId) {
-      const slot = await Slot.findById(parsed.data.slotId);
-      if (!slot) return res.status(404).json({ error: "Slot not found" });
-      if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
-      const conflict = await Reservation.findOne({ _id: { $ne: reservation._id }, slot: slot._id });
-      if (conflict) return res.status(409).json({ error: "Slot already reserved" });
-      reservation.slot = slot._id;
-      reservation.model = slot.model;
-      reservation.startDateTime = slot.startDateTime;
-      reservation.endDateTime = slot.endDateTime;
-    }
+    const slot = parsed.data.slotId
+      ? await Slot.findById(parsed.data.slotId).populate("model")
+      : await Slot.findById(reservation.slot).populate("model");
+    if (!slot) return res.status(404).json({ error: "Slot not found" });
+    if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
+
+    const nextStart = parsed.data.startDateTime ? new Date(parsed.data.startDateTime) : reservation.startDateTime;
+    const nextEnd = parsed.data.endDateTime ? new Date(parsed.data.endDateTime) : reservation.endDateTime;
+    const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
+    if (timingError) return res.status(400).json({ error: timingError });
+
+    const duplicate = await Reservation.findOne({
+      _id: { $ne: reservation._id },
+      user: reservation.user,
+      slot: slot._id,
+    });
+    if (duplicate) return res.status(409).json({ error: "User already has a reservation for this slot" });
+
+    reservation.slot = slot._id;
+    reservation.model = slot.model;
+    reservation.startDateTime = nextStart;
+    reservation.endDateTime = nextEnd;
 
     if (parsed.data.notes !== undefined) reservation.notes = parsed.data.notes;
 

@@ -14,7 +14,7 @@ const ReservationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-ReservationSchema.index({ slot: 1 }, { unique: true });
+ReservationSchema.index({ slot: 1, startDateTime: 1 });
 ReservationSchema.index({ user: 1, startDateTime: 1 });
 
 export default mongoose.model("Reservation", ReservationSchema);
