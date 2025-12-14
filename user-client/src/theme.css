@@ -5,6 +5,7 @@
     linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
   --card-bg: #ffffff;
   --surface: #f8fafc;
+  --surface-1: #ffffff;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --border: #e2e8f0;
@@ -30,6 +31,7 @@
     linear-gradient(180deg, #0b1220 0%, #0b152a 100%);
   --card-bg: #0f172a;
   --surface: #0b1220;
+  --surface-1: #11182b;
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
   --border: #1e293b;
