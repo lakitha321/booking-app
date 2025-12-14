@@ -1,6 +1,7 @@
 import express from "express";
 import Slot from "../models/Slot.js";
 import Model from "../models/Model.js";
+import Reservation from "../models/Reservation.js";
 import { slotCreateSchema, slotUpdateSchema } from "../validation/slotSchema.js";
 
 const router = express.Router();
@@ -56,6 +57,30 @@ router.get("/", async (req, res) => {
     }
 
     const slots = await Slot.find(q).populate("model").sort({ startDateTime: 1 });
+
+    if (includeReservations === "true" && slots.length) {
+      const slotIds = slots.map((slot) => slot._id);
+      const reservations = await Reservation.find({ slot: { $in: slotIds } })
+        .select("slot startDateTime endDateTime userName userEmail user")
+        .sort({ startDateTime: 1 });
+
+      const reservationsBySlot = new Map();
+      reservations.forEach((reservation) => {
+        const key = reservation.slot.toString();
+        const list = reservationsBySlot.get(key) || [];
+        list.push(reservation);
+        reservationsBySlot.set(key, list);
+      });
+
+      const withReservations = slots.map((slot) => {
+        const slotObj = slot.toObject({ virtuals: true });
+        slotObj.reservations = reservationsBySlot.get(slot._id.toString()) || [];
+        return slotObj;
+      });
+
+      return res.json(withReservations);
+    }
+
     return res.json(slots);
   } catch (e) {
     return res.status(500).json({ error: "Server error" });

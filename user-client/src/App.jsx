@@ -55,6 +55,69 @@ function toIso(value) {
   return value ? new Date(value).toISOString() : ''
 }
 
+function minutesBetween(start, end) {
+  return Math.max(0, Math.round((end - start) / 60000))
+}
+
+function formatDuration(minutes) {
+  if (minutes <= 0) return 'No time left'
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (!hours) return `${mins} min${mins === 1 ? '' : 's'}`
+  if (!mins) return `${hours} hr${hours === 1 ? '' : 's'}`
+  return `${hours} hr${hours === 1 ? '' : 's'} ${mins} min${mins === 1 ? '' : 's'}`
+}
+
+function formatTimeRange(start, end, withDate = false) {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const dateOptions = withDate ? undefined : { hour: 'numeric', minute: '2-digit' }
+  const startLabel = startDate.toLocaleString(undefined, dateOptions)
+  const endLabel = endDate.toLocaleString(undefined, dateOptions)
+  return `${startLabel} → ${endLabel}`
+}
+
+function buildAvailableWindows(slot, ignoreReservationId) {
+  if (!slot) return []
+  const slotStart = new Date(slot.startDateTime)
+  const slotEnd = new Date(slot.endDateTime)
+
+  const reservations = [...(slot.reservations || [])]
+    .filter((res) => (res._id || '').toString() !== (ignoreReservationId || '').toString())
+    .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
+
+  const windows = []
+  let cursor = slotStart
+
+  reservations.forEach((res) => {
+    const resStart = new Date(res.startDateTime)
+    const resEnd = new Date(res.endDateTime)
+    if (resStart > cursor) {
+      windows.push({ start: cursor, end: resStart })
+    }
+    if (resEnd > cursor) cursor = resEnd
+  })
+
+  if (cursor < slotEnd) {
+    windows.push({ start: cursor, end: slotEnd })
+  }
+
+  return windows
+}
+
+function remainingMinutesForSlot(slot) {
+  if (!slot) return 0
+  const start = new Date(slot.startDateTime)
+  const end = new Date(slot.endDateTime)
+  const total = minutesBetween(start, end)
+  const reserved = (slot.reservations || []).reduce((sum, res) => {
+    const resStart = new Date(res.startDateTime)
+    const resEnd = new Date(res.endDateTime)
+    return sum + minutesBetween(resStart, resEnd)
+  }, 0)
+  return Math.max(0, total - reserved)
+}
+
 function AuthPanel({ mode, onModeChange, onLogin, onRegister, loading, error }) {
   const isLogin = mode === 'login'
   const [form, setForm] = useState({
@@ -138,13 +201,70 @@ function NavTabs({ page, onChange }) {
   )
 }
 
-function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myReservations, submitting }) {
+function SlotTimeline({ slot, selection, highlightUserId, compact = false }) {
+  const slotStart = useMemo(() => new Date(slot.startDateTime), [slot])
+  const slotEnd = useMemo(() => new Date(slot.endDateTime), [slot])
+  const duration = slotEnd - slotStart || 1
+
+  const reservations = useMemo(
+    () => [...(slot.reservations || [])].sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime)),
+    [slot]
+  )
+
+  const getPercent = (value) => {
+    const delta = new Date(value) - slotStart
+    return Math.max(0, Math.min(100, (delta / duration) * 100))
+  }
+
+  const selectionSegment = selection
+    ? { start: getPercent(selection.startDateTime), end: getPercent(selection.endDateTime) }
+    : null
+
+  return (
+    <div className={compact ? 'timeline compact' : 'timeline'}>
+      <div className="timeline-track">
+        {reservations.map((res) => {
+          const start = getPercent(res.startDateTime)
+          const end = getPercent(res.endDateTime)
+          const isMine = res.user === highlightUserId || res.user?._id === highlightUserId
+          return (
+            <div
+              key={res._id || `${res.startDateTime}-${res.endDateTime}`}
+              className={isMine ? 'timeline-block mine' : 'timeline-block'}
+              style={{ left: `${start}%`, width: `${Math.max(1, end - start)}%` }}
+              title={`${formatTimeRange(res.startDateTime, res.endDateTime, true)}${
+                isMine ? ' (Your reservation)' : ''
+              }`}
+            />
+          )
+        })}
+        {selectionSegment && (
+          <div
+            className="timeline-selection"
+            style={{
+              left: `${selectionSegment.start}%`,
+              width: `${Math.max(1, selectionSegment.end - selectionSegment.start)}%`,
+            }}
+            title={`Selected window: ${formatTimeRange(selection.startDateTime, selection.endDateTime, true)}`}
+          />
+        )}
+      </div>
+      <div className="timeline-labels">
+        <span>{slotStart.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+        <span>{slotEnd.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+      </div>
+    </div>
+  )
+}
+
+function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myReservations, submitting, user }) {
   const activeSlots = useMemo(() => slots.filter((slot) => slot.isActive), [slots])
   const reservationMap = useMemo(() => {
     const map = new Map()
     myReservations.forEach((r) => {
       const id = r.slot?._id || r.slot
-      map.set(id, r)
+      if (!map.has(id)) map.set(id, [])
+      map.get(id).push(r)
     })
     return map
   }, [myReservations])
@@ -168,7 +288,7 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
             <CalendarIcon size={18} /> Upcoming availability
           </h2>
           <p className="subtitle">
-            Browse models and click an active slot to pick the exact start and end time you want.
+            Every active slot shows remaining time and a visual timeline. Select any opening to reserve.
           </p>
         </div>
         <div className="section-actions">
@@ -194,21 +314,67 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
             <ul className="slot-list">
               {modelSlots.length === 0 && <li className="helper">No active slots yet</li>}
               {modelSlots.map((slot) => {
-                const existing = reservationMap.get(slot._id)
+                const userReservations = reservationMap.get(slot._id) || []
+                const remainingMinutes = remainingMinutesForSlot(slot)
+                const hasAvailability = remainingMinutes > 0
+                const totalReservations = slot.reservations?.length || 0
+
                 return (
-                  <li key={slot._id}>
-                    <CheckIcon size={14} />
-                    <span>
-                      {new Date(slot.startDateTime).toLocaleString()} → {new Date(slot.endDateTime).toLocaleString()}
-                    </span>
-                    {existing && <span className="pill">You reserved</span>}
+                  <li key={slot._id} className="slot-row">
+                    <div className="slot-row-header">
+                      <div className="slot-times">
+                        <CheckIcon size={14} />
+                        <span>{formatTimeRange(slot.startDateTime, slot.endDateTime, true)}</span>
+                      </div>
+                      <div className="slot-meta">
+                        <span className={hasAvailability ? 'pill success' : 'pill warning'}>
+                          {hasAvailability
+                            ? `${formatDuration(remainingMinutes)} remaining`
+                            : 'Fully booked'}
+                        </span>
+                        <span className="pill neutral">{totalReservations} reservations</span>
+                      </div>
+                    </div>
+
+                    <SlotTimeline slot={slot} highlightUserId={user?.id} compact />
+
+                    <div className="reservation-chip-row">
+                      {slot.reservations?.length ? (
+                        slot.reservations.map((res) => {
+                          const isMine = res.user === user?.id || res.user?._id === user?.id
+                          return (
+                            <div key={res._id} className={isMine ? 'reservation-chip mine' : 'reservation-chip'}>
+                              <span className="mono">{formatTimeRange(res.startDateTime, res.endDateTime)}</span>
+                              <span className="pill neutral">{isMine ? 'Your reservation' : 'Booked'}</span>
+                              {isMine && (
+                                <button
+                                  className="btn tertiary"
+                                  type="button"
+                                  onClick={() => onReserve(slot, res._id)}
+                                  disabled={submitting}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <p className="helper">No reservations yet — pick any time inside this window.</p>
+                      )}
+                    </div>
+
                     <button
                       className="btn tertiary"
-                      style={{ marginLeft: 8 }}
+                      style={{ marginTop: 8 }}
                       onClick={() => onReserve(slot)}
-                      disabled={submitting && !existing}
+                      disabled={submitting || !hasAvailability}
                     >
-                      {existing ? 'View details' : submitting ? 'Opening…' : 'Select time'}
+                      {hasAvailability
+                        ? userReservations.length
+                          ? 'Reserve more time'
+                          : 'Select time'
+                        : 'Fully booked'}
                     </button>
                   </li>
                 )
@@ -221,23 +387,90 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
   )
 }
 
-function ReservationModal({ slot, reservation, onClose, onSubmit, submitting }) {
-  const [startDateTime, setStartDateTime] = useState(
-    toDatetimeLocal(reservation?.startDateTime || slot.startDateTime)
+function ReservationModal({ slot, reservationId, myReservations, user, onClose, onSubmit, submitting }) {
+  const slotReservations = useMemo(
+    () => [...(slot.reservations || [])].sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime)),
+    [slot]
   )
-  const [endDateTime, setEndDateTime] = useState(toDatetimeLocal(reservation?.endDateTime || slot.endDateTime))
-  const [notes, setNotes] = useState(reservation?.notes || '')
+  const mySlotReservations = useMemo(
+    () => myReservations.filter((r) => (r.slot?._id || r.slot) === slot._id),
+    [myReservations, slot]
+  )
+
+  const [activeReservationId, setActiveReservationId] = useState(reservationId || 'new')
+  useEffect(() => {
+    setActiveReservationId(reservationId || 'new')
+  }, [reservationId, slot._id])
+
+  const activeReservation = useMemo(
+    () => mySlotReservations.find((res) => res._id === activeReservationId) || null,
+    [activeReservationId, mySlotReservations]
+  )
+
+  const slotStart = useMemo(() => new Date(slot.startDateTime), [slot])
+  const slotEnd = useMemo(() => new Date(slot.endDateTime), [slot])
+  const availableWindows = useMemo(
+    () => buildAvailableWindows(slot, activeReservation?._id),
+    [slot, activeReservation]
+  )
+  const defaultWindow = availableWindows[0] || { start: slotStart, end: slotEnd }
+  const defaultEnd = useMemo(
+    () =>
+      new Date(
+        Math.min(defaultWindow.end.getTime(), defaultWindow.start.getTime() + 60 * 60 * 1000)
+      ),
+    [defaultWindow.end, defaultWindow.start]
+  )
+
+  const [startDateTime, setStartDateTime] = useState(toDatetimeLocal(defaultWindow.start))
+  const [endDateTime, setEndDateTime] = useState(toDatetimeLocal(defaultEnd))
+  const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setStartDateTime(toDatetimeLocal(reservation?.startDateTime || slot.startDateTime))
-    setEndDateTime(toDatetimeLocal(reservation?.endDateTime || slot.endDateTime))
-    setNotes(reservation?.notes || '')
+    if (activeReservation) {
+      setStartDateTime(toDatetimeLocal(activeReservation.startDateTime))
+      setEndDateTime(toDatetimeLocal(activeReservation.endDateTime))
+      setNotes(activeReservation.notes || '')
+    } else {
+      setStartDateTime(toDatetimeLocal(defaultWindow.start))
+      setEndDateTime(toDatetimeLocal(defaultEnd))
+      setNotes('')
+    }
     setError('')
-  }, [slot, reservation])
+  }, [activeReservation, defaultWindow.start, defaultWindow.end, defaultEnd])
 
-  const minTime = toDatetimeLocal(slot.startDateTime)
-  const maxTime = toDatetimeLocal(slot.endDateTime)
+  const totalMinutes = Math.max(1, minutesBetween(slotStart, slotEnd))
+  const startMinutes = Math.min(
+    totalMinutes,
+    Math.max(0, Math.round((new Date(startDateTime) - slotStart) / 60000))
+  )
+  const endMinutes = Math.min(
+    totalMinutes,
+    Math.max(startMinutes + 5, Math.round((new Date(endDateTime) - slotStart) / 60000))
+  )
+
+  const hasAvailability = availableWindows.some((w) => w.end > w.start)
+  const selectionDuration = startDateTime && endDateTime
+    ? minutesBetween(new Date(startDateTime), new Date(endDateTime))
+    : 0
+
+  const handleSliderChange = (field, minutes) => {
+    const nextDate = new Date(slotStart.getTime() + minutes * 60000)
+    if (field === 'start') {
+      setStartDateTime(toDatetimeLocal(nextDate))
+      if (minutes >= endMinutes) {
+        const padded = new Date(nextDate.getTime() + 30 * 60000)
+        setEndDateTime(toDatetimeLocal(padded <= slotEnd ? padded : slotEnd))
+      }
+    } else {
+      setEndDateTime(toDatetimeLocal(nextDate))
+      if (minutes <= startMinutes) {
+        const padded = new Date(nextDate.getTime() - 30 * 60000)
+        setStartDateTime(toDatetimeLocal(padded >= slotStart ? padded : slotStart))
+      }
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -248,11 +481,34 @@ function ReservationModal({ slot, reservation, onClose, onSubmit, submitting }) 
       setError('End time must be after start time.')
       return
     }
-    if (start < new Date(slot.startDateTime) || end > new Date(slot.endDateTime)) {
+    if (start < slotStart || end > slotEnd) {
       setError('Please choose times within the available slot window.')
       return
     }
-    onSubmit({ slotId: slot._id, startDateTime, endDateTime, notes })
+
+    const overlaps = slotReservations.some((res) => {
+      if (activeReservation && res._id === activeReservation._id) return false
+      const resStart = new Date(res.startDateTime)
+      const resEnd = new Date(res.endDateTime)
+      return resStart < end && resEnd > start
+    })
+    if (overlaps) {
+      setError('That time overlaps an existing reservation on this slot.')
+      return
+    }
+
+    if (!hasAvailability && !activeReservation) {
+      setError('This slot is fully booked. Pick another slot or edit an existing reservation.')
+      return
+    }
+
+    onSubmit({
+      slotId: slot._id,
+      reservationId: activeReservation?._id || null,
+      startDateTime,
+      endDateTime,
+      notes,
+    })
   }
 
   return (
@@ -262,13 +518,67 @@ function ReservationModal({ slot, reservation, onClose, onSubmit, submitting }) 
           <div>
             <p className="tag-pill">{slot.model?.name || 'Model'} availability</p>
             <h3>Select your time</h3>
-            <p className="helper">
-              {new Date(slot.startDateTime).toLocaleString()} → {new Date(slot.endDateTime).toLocaleString()}
-            </p>
+            <p className="helper">{formatTimeRange(slot.startDateTime, slot.endDateTime, true)}</p>
           </div>
           <button className="btn ghost" onClick={onClose} type="button">
             Close
           </button>
+        </div>
+
+        {mySlotReservations.length > 0 && (
+          <div className="reservation-chip-row" style={{ marginBottom: 12 }}>
+            <span className="label">Your reservations in this slot:</span>
+            {mySlotReservations.map((res) => (
+              <button
+                key={res._id}
+                className={
+                  activeReservationId === res._id ? 'btn tertiary active-chip' : 'btn tertiary'
+                }
+                type="button"
+                onClick={() => setActiveReservationId(res._id)}
+              >
+                {formatTimeRange(res.startDateTime, res.endDateTime)}
+              </button>
+            ))}
+            <button
+              className={activeReservationId === 'new' ? 'btn secondary' : 'btn tertiary'}
+              type="button"
+              onClick={() => setActiveReservationId('new')}
+            >
+              Start a new reservation
+            </button>
+          </div>
+        )}
+
+        <SlotTimeline
+          slot={slot}
+          selection={{ startDateTime, endDateTime }}
+          highlightUserId={user?.id}
+        />
+
+        <div className="slider-row">
+          <label className="form-field" style={{ flex: 1 }}>
+            <span>Start marker</span>
+            <input
+              type="range"
+              min={0}
+              max={totalMinutes}
+              step={15}
+              value={startMinutes}
+              onChange={(e) => handleSliderChange('start', Number(e.target.value))}
+            />
+          </label>
+          <label className="form-field" style={{ flex: 1 }}>
+            <span>End marker</span>
+            <input
+              type="range"
+              min={0}
+              max={totalMinutes}
+              step={15}
+              value={endMinutes}
+              onChange={(e) => handleSliderChange('end', Number(e.target.value))}
+            />
+          </label>
         </div>
 
         <form className="form-grid" onSubmit={handleSubmit}>
@@ -277,8 +587,8 @@ function ReservationModal({ slot, reservation, onClose, onSubmit, submitting }) 
             <input
               type="datetime-local"
               value={startDateTime}
-              min={minTime}
-              max={maxTime}
+              min={toDatetimeLocal(slotStart)}
+              max={toDatetimeLocal(slotEnd)}
               onChange={(e) => setStartDateTime(e.target.value)}
               required
             />
@@ -289,8 +599,8 @@ function ReservationModal({ slot, reservation, onClose, onSubmit, submitting }) 
             <input
               type="datetime-local"
               value={endDateTime}
-              min={minTime}
-              max={maxTime}
+              min={toDatetimeLocal(slotStart)}
+              max={toDatetimeLocal(slotEnd)}
               onChange={(e) => setEndDateTime(e.target.value)}
               required
             />
@@ -305,17 +615,38 @@ function ReservationModal({ slot, reservation, onClose, onSubmit, submitting }) 
             />
           </label>
 
+          <div className="availability-windows">
+            <p className="label">Available windows in this slot</p>
+            {availableWindows.length ? (
+              <ul>
+                {availableWindows.map((window) => (
+                  <li key={window.start.toISOString()}>{formatTimeRange(window.start, window.end, true)}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="helper">This slot is currently booked end-to-end.</p>
+            )}
+          </div>
+
+          <p className="helper">Selected duration: {formatDuration(selectionDuration)}.</p>
+
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button className="btn secondary" type="button" onClick={onClose} disabled={submitting}>
               Cancel
             </button>
-            <button className="btn primary" type="submit" disabled={submitting}>
-              {submitting ? 'Saving…' : reservation ? 'Update reservation' : 'Reserve time'}
+            <button className="btn primary" type="submit" disabled={submitting || (!hasAvailability && !activeReservation)}>
+              {submitting
+                ? 'Saving…'
+                : activeReservation
+                ? 'Update reservation'
+                : 'Reserve time'}
             </button>
           </div>
 
           {error && <div className="error">{error}</div>}
-          {reservation && <p className="helper">You already reserved this slot; updating will replace your time.</p>}
+          {!hasAvailability && !activeReservation && (
+            <p className="helper">This slot is fully booked. Pick a different slot or edit an existing one.</p>
+          )}
         </form>
       </div>
     </div>
@@ -574,6 +905,42 @@ export default function App() {
     [models, slots, reservations]
   )
 
+  const upsertSlotReservation = (reservation) => {
+    const reservationSlotId = reservation.slot?._id || reservation.slot
+    const normalized = {
+      _id: reservation._id,
+      slot: reservationSlotId,
+      startDateTime: reservation.startDateTime,
+      endDateTime: reservation.endDateTime,
+      user: reservation.user?._id || reservation.user,
+      userEmail: reservation.userEmail,
+      userName: reservation.userName,
+    }
+
+    setSlots((prev) =>
+      prev.map((slot) => {
+        if (slot._id !== reservationSlotId) return slot
+        const nextReservations = [...(slot.reservations || [])]
+        const idx = nextReservations.findIndex((r) => r._id === normalized._id)
+        if (idx >= 0) nextReservations[idx] = normalized
+        else nextReservations.push(normalized)
+        nextReservations.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
+        return { ...slot, reservations: nextReservations }
+      })
+    )
+  }
+
+  const removeSlotReservation = (reservationId) => {
+    setSlots((prev) =>
+      prev.map((slot) => {
+        if (!slot.reservations) return slot
+        const nextReservations = slot.reservations.filter((res) => res._id !== reservationId)
+        if (nextReservations.length === slot.reservations.length) return slot
+        return { ...slot, reservations: nextReservations }
+      })
+    )
+  }
+
   const applyAuth = (nextToken, profile) => {
     localStorage.setItem('userToken', nextToken)
     setToken(nextToken)
@@ -618,16 +985,15 @@ export default function App() {
     }
   }
 
-  const openReservationDraft = (slot) => {
+  const openReservationDraft = (slot, reservationId = null) => {
     if (!slot) return
-    const existing = reservations.find((r) => (r.slot?._id || r.slot) === slot._id) || null
     setReservationError('')
-    setReservationDraft({ slot, reservation: existing })
+    setReservationDraft({ slot, reservationId })
   }
 
   const closeReservationDraft = () => setReservationDraft(null)
 
-  const handleSubmitReservation = async ({ slotId, startDateTime, endDateTime, notes }) => {
+  const handleSubmitReservation = async ({ slotId, reservationId, startDateTime, endDateTime, notes }) => {
     if (!token) return
     setReservationSubmitting(true)
     setReservationError('')
@@ -639,12 +1005,14 @@ export default function App() {
     }
 
     try {
-      if (reservationDraft?.reservation) {
-        const updated = await updateMyReservation(token, reservationDraft.reservation._id, payload)
+      if (reservationId) {
+        const updated = await updateMyReservation(token, reservationId, payload)
         setReservations((prev) => prev.map((r) => (r._id === updated._id ? updated : r)))
+        upsertSlotReservation(updated)
       } else {
         const created = await createMyReservation(token, payload)
         setReservations((prev) => [...prev, created])
+        upsertSlotReservation(created)
       }
       setPage('reservations')
       setReservationDraft(null)
@@ -666,6 +1034,7 @@ export default function App() {
         endDateTime: toIso(payload.endDateTime),
       })
       setReservations((prev) => prev.map((r) => (r._id === updated._id ? updated : r)))
+      upsertSlotReservation(updated)
     } catch (e) {
       setReservationError(e.message)
     } finally {
@@ -680,7 +1049,8 @@ export default function App() {
     try {
       await deleteMyReservation(token, id)
       setReservations((prev) => prev.filter((r) => r._id !== id))
-      if (reservationDraft?.reservation?._id === id) setReservationDraft(null)
+      removeSlotReservation(id)
+      if (reservationDraft?.reservationId === id) setReservationDraft(null)
     } catch (e) {
       setReservationError(e.message)
     }
@@ -692,7 +1062,7 @@ export default function App() {
     try {
       const [modelData, slotData, reservationData] = await Promise.all([
         fetchModels(tkn),
-        fetchSlots(),
+        fetchSlots({ includeReservations: true }),
         tkn ? fetchMyReservations(tkn) : Promise.resolve([]),
       ])
       setModels(modelData)
@@ -786,6 +1156,7 @@ export default function App() {
               onReserve={openReservationDraft}
               myReservations={reservations}
               submitting={reservationSubmitting}
+              user={user}
             />
           )}
           {page === 'reservations' && (
@@ -801,7 +1172,9 @@ export default function App() {
           {reservationDraft && (
             <ReservationModal
               slot={reservationDraft.slot}
-              reservation={reservationDraft.reservation}
+              reservationId={reservationDraft.reservationId}
+              myReservations={reservations}
+              user={user}
               onClose={closeReservationDraft}
               onSubmit={handleSubmitReservation}
               submitting={reservationSubmitting}

@@ -42,8 +42,10 @@ export async function fetchModels(token) {
   })
 }
 
-export async function fetchSlots() {
-  return request('/slots?active=true')
+export async function fetchSlots({ includeReservations = false } = {}) {
+  const params = new URLSearchParams({ active: 'true' })
+  if (includeReservations) params.set('includeReservations', 'true')
+  return request(`/slots?${params.toString()}`)
 }
 
 export async function fetchMyReservations(token) {

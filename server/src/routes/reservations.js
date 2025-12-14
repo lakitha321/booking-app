@@ -39,8 +39,14 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
   const timingError = validateTimingWithinSlot(slot, start, end);
   if (timingError) return { error: { code: 400, message: timingError } };
 
-  const duplicate = await Reservation.findOne({ user: user._id, slot: slot._id });
-  if (duplicate) return { error: { code: 409, message: "User already has a reservation for this slot" } };
+  const overlap = await Reservation.findOne({
+    slot: slot._id,
+    startDateTime: { $lt: end },
+    endDateTime: { $gt: start },
+  });
+  if (overlap) {
+    return { error: { code: 409, message: "Requested time overlaps an existing reservation" } };
+  }
 
   return {
     slot,
@@ -114,12 +120,13 @@ router.put("/my/:id", requireAuth, async (req, res) => {
     const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
     if (timingError) return res.status(400).json({ error: timingError });
 
-    const duplicate = await Reservation.findOne({
+    const overlap = await Reservation.findOne({
       _id: { $ne: reservation._id },
-      user: reservation.user,
       slot: slot._id,
+      startDateTime: { $lt: nextEnd },
+      endDateTime: { $gt: nextStart },
     });
-    if (duplicate) return res.status(409).json({ error: "User already has a reservation for this slot" });
+    if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
     reservation.model = slot.model;
@@ -218,12 +225,13 @@ router.put("/:id", async (req, res) => {
     const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
     if (timingError) return res.status(400).json({ error: timingError });
 
-    const duplicate = await Reservation.findOne({
+    const overlap = await Reservation.findOne({
       _id: { $ne: reservation._id },
-      user: reservation.user,
       slot: slot._id,
+      startDateTime: { $lt: nextEnd },
+      endDateTime: { $gt: nextStart },
     });
-    if (duplicate) return res.status(409).json({ error: "User already has a reservation for this slot" });
+    if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
     reservation.model = slot.model;
