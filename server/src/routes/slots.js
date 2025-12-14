@@ -44,7 +44,7 @@ router.post("/", async (req, res) => {
 // Read all (with optional range filters)
 router.get("/", async (req, res) => {
   try {
-    const { from, to, active } = req.query;
+    const { from, to, active, includeReservations } = req.query;
 
     const q = {};
     if (active === "true") q.isActive = true;
