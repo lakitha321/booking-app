@@ -1,0 +1,46 @@
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --bg-gradient: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.08), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  --card-bg: #ffffff;
+  --surface: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border: #e2e8f0;
+  --muted: #cbd5e1;
+  --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --primary: #4f46e5;
+  --primary-strong: #4338ca;
+  --primary-soft: rgba(79, 70, 229, 0.12);
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+  --trans-fast: 0.18s ease;
+}
+
+[data-theme='dark'] {
+  --bg-gradient: radial-gradient(circle at 30% 30%, rgba(79, 70, 229, 0.12), transparent 35%),
+    radial-gradient(circle at 75% 10%, rgba(56, 189, 248, 0.12), transparent 35%),
+    linear-gradient(180deg, #0b1220 0%, #0b152a 100%);
+  --card-bg: #0f172a;
+  --surface: #0b1220;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --border: #1e293b;
+  --muted: #334155;
+  --shadow: 0 18px 45px rgba(8, 15, 30, 0.65);
+  --primary: #a5b4fc;
+  --primary-strong: #818cf8;
+  --primary-soft: rgba(129, 140, 248, 0.18);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.2);
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.15);
+  --warning: #fbbf24;
+}

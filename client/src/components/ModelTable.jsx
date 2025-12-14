@@ -1,4 +1,5 @@
 import React from 'react'
+import { EditIcon, NoteIcon, TrashIcon, UsersIcon } from '../icons'
 
 export default function ModelTable({ models, onEdit, onDelete }) {
   if (!models.length) {
@@ -19,16 +20,24 @@ export default function ModelTable({ models, onEdit, onDelete }) {
         <tbody>
           {models.map((model) => (
             <tr key={model._id}>
-              <td>{model.name}</td>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <UsersIcon size={16} /> {model.name}
+                </div>
+              </td>
               <td>{model.nic || '—'}</td>
-              <td>{model.notes || '—'}</td>
+              <td>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: model.notes ? undefined : 'var(--text-secondary)' }}>
+                  <NoteIcon size={14} /> {model.notes || '—'}
+                </div>
+              </td>
               <td>
                 <div className="row-actions">
                   <button className="btn secondary" onClick={() => onEdit(model)}>
-                    Edit
+                    <EditIcon size={15} /> Edit
                   </button>
                   <button className="btn danger" onClick={() => onDelete(model._id)}>
-                    Delete
+                    <TrashIcon size={15} /> Delete
                   </button>
                 </div>
               </td>

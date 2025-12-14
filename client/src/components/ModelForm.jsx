@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { NoteIcon, UsersIcon } from '../icons'
 
-export default function ModelForm({ onSubmit, onCancel, initialData = null, submitting, mode }) {
+export default function ModelForm({ onSubmit, onCancel, initialData = null, submitting, mode, resetSignal }) {
   const [form, setForm] = useState({ name: '', nic: '', notes: '' })
 
   useEffect(() => {
@@ -10,8 +11,10 @@ export default function ModelForm({ onSubmit, onCancel, initialData = null, subm
         nic: initialData.nic || '',
         notes: initialData.notes || '',
       })
+    } else {
+      setForm({ name: '', nic: '', notes: '' })
     }
-  }, [initialData])
+  }, [initialData, resetSignal])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -26,7 +29,9 @@ export default function ModelForm({ onSubmit, onCancel, initialData = null, subm
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
       <div className="form-row">
-        <label htmlFor="name">Model name *</label>
+        <label htmlFor="name">
+          <UsersIcon size={16} /> Model name *
+        </label>
         <input
           id="name"
           name="name"
@@ -39,7 +44,9 @@ export default function ModelForm({ onSubmit, onCancel, initialData = null, subm
       </div>
 
       <div className="form-row">
-        <label htmlFor="nic">NIC</label>
+        <label htmlFor="nic">
+          <UsersIcon size={16} /> NIC
+        </label>
         <input
           id="nic"
           name="nic"
@@ -51,7 +58,9 @@ export default function ModelForm({ onSubmit, onCancel, initialData = null, subm
       </div>
 
       <div className="form-row">
-        <label htmlFor="notes">Notes</label>
+        <label htmlFor="notes">
+          <NoteIcon size={16} /> Notes
+        </label>
         <textarea
           id="notes"
           name="notes"
