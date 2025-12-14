@@ -50,11 +50,19 @@ export default function SlotTable({ slots, onEdit, onDelete }) {
               </td>
               <td>
                 <div className="row-actions">
-                  <button className="btn secondary" onClick={() => onEdit(slot)}>
-                    <EditIcon size={15} /> Edit
+                  <button
+                    className="btn secondary icon-only"
+                    aria-label="Edit slot"
+                    onClick={() => onEdit(slot)}
+                  >
+                    <EditIcon size={15} />
                   </button>
-                  <button className="btn danger" onClick={() => onDelete(slot._id)}>
-                    <TrashIcon size={15} /> Delete
+                  <button
+                    className="btn danger icon-only"
+                    aria-label="Delete slot"
+                    onClick={() => onDelete(slot._id)}
+                  >
+                    <TrashIcon size={15} />
                   </button>
                 </div>
               </td>

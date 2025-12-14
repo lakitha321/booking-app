@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react'
-import { CalendarIcon, ClockIcon, NoteIcon, PowerIcon } from '../icons'
+import { CalendarIcon, NoteIcon, PowerIcon } from '../icons'
 
-function toLocalInputValue(value) {
-  if (!value) return ''
+function toLocalParts(value) {
+  if (!value) return { date: '', time: '' }
   const date = new Date(value)
   const off = date.getTimezoneOffset()
   const local = new Date(date.getTime() - off * 60000)
-  return local.toISOString().slice(0, 16)
+  const isoString = local.toISOString()
+  return {
+    date: isoString.slice(0, 10),
+    time: isoString.slice(11, 16),
+  }
 }
 
 export default function SlotForm({
@@ -20,24 +24,31 @@ export default function SlotForm({
 }) {
   const [form, setForm] = useState({
     modelId: '',
-    startDateTime: '',
-    endDateTime: '',
+    date: '',
+    startTime: '',
+    endTime: '',
     notes: '',
     isActive: true,
   })
 
+  const [validationError, setValidationError] = useState('')
+
   useEffect(() => {
     if (initialData) {
+      const startParts = toLocalParts(initialData.startDateTime)
+      const endParts = toLocalParts(initialData.endDateTime)
       setForm({
         modelId: initialData.model?._id || initialData.model || '',
-        startDateTime: toLocalInputValue(initialData.startDateTime),
-        endDateTime: toLocalInputValue(initialData.endDateTime),
+        date: startParts.date,
+        startTime: startParts.time,
+        endTime: endParts.time,
         notes: initialData.notes || '',
         isActive: Boolean(initialData.isActive),
       })
     } else {
-      setForm({ modelId: '', startDateTime: '', endDateTime: '', notes: '', isActive: true })
+      setForm({ modelId: '', date: '', startTime: '', endTime: '', notes: '', isActive: true })
     }
+    setValidationError('')
   }, [initialData, resetSignal])
 
   const handleChange = (e) => {
@@ -47,7 +58,30 @@ export default function SlotForm({
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSubmit({ ...form })
+    setValidationError('')
+
+    if (!form.date) {
+      setValidationError('Select a date before choosing start and end times.')
+      return
+    }
+
+    if (!form.startTime || !form.endTime) {
+      setValidationError('Provide both start and end times for the selected date.')
+      return
+    }
+
+    if (form.endTime < form.startTime) {
+      setValidationError('End time must be after start time on the same date.')
+      return
+    }
+
+    const { date, startTime, endTime, ...rest } = form
+
+    onSubmit({
+      ...rest,
+      startDateTime: `${date}T${startTime}`,
+      endDateTime: `${date}T${endTime}`,
+    })
   }
 
   return (
@@ -76,29 +110,38 @@ export default function SlotForm({
       </div>
 
       <div className="form-row">
+        <label htmlFor="date">
+          <CalendarIcon size={16} /> Date
+        </label>
+        <input id="date" name="date" type="date" required value={form.date} onChange={handleChange} />
+      </div>
+
+      <div className="form-row">
         <label htmlFor="startDateTime">
-          <ClockIcon size={16} /> Start
+          <CalendarIcon size={16} /> Start time
         </label>
         <input
           id="startDateTime"
-          name="startDateTime"
-          type="datetime-local"
+          name="startTime"
+          type="time"
           required
-          value={form.startDateTime}
+          disabled={!form.date}
+          value={form.startTime}
           onChange={handleChange}
         />
       </div>
 
       <div className="form-row">
         <label htmlFor="endDateTime">
-          <ClockIcon size={16} /> End
+          <CalendarIcon size={16} /> End time
         </label>
         <input
           id="endDateTime"
-          name="endDateTime"
-          type="datetime-local"
+          name="endTime"
+          type="time"
           required
-          value={form.endDateTime}
+          disabled={!form.date}
+          value={form.endTime}
           onChange={handleChange}
         />
       </div>
@@ -138,6 +181,7 @@ export default function SlotForm({
           </button>
         )}
       </div>
+      {validationError && <div className="error" role="alert">{validationError}</div>}
     </form>
   )
 }

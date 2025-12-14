@@ -126,6 +126,12 @@ header {
   font-size: 14px;
 }
 
+.btn.icon-only {
+  padding: 10px;
+  min-width: 44px;
+  gap: 0;
+}
+
 .btn.primary {
   background: var(--primary);
   color: #fff;
@@ -185,6 +191,8 @@ label {
 
 input[type='text'],
 input[type='datetime-local'],
+input[type='date'],
+input[type='time'],
 textarea,
 select {
   border: 1px solid var(--border);
@@ -395,8 +403,14 @@ tr:hover td {
   gap: 8px;
   padding: 8px 12px;
   background: var(--surface);
+  color: var(--text-primary);
   cursor: pointer;
   transition: border-color var(--trans-fast), color var(--trans-fast);
+}
+
+.toggle span {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .toggle:hover {

@@ -59,11 +59,11 @@ export const EditIcon = (props) => (
 
 export const TrashIcon = (props) => (
   <Icon {...props}>
-    <path d="M3 6h18" />
-    <path d="M8 6v13" />
-    <path d="M16 6v13" />
-    <path d="M5 6l1-3h12l1 3" />
-    <path d="M10 6V3h4v3" />
+    <path d="M4 7h16" />
+    <path d="M9 4h6l1 3H8Z" />
+    <path d="M9 11v6" />
+    <path d="M15 11v6" />
+    <path d="M6.5 7.5 7 20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l.5-12.5" />
   </Icon>
 )
 

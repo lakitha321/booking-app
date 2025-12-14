@@ -33,11 +33,19 @@ export default function ModelTable({ models, onEdit, onDelete }) {
               </td>
               <td>
                 <div className="row-actions">
-                  <button className="btn secondary" onClick={() => onEdit(model)}>
-                    <EditIcon size={15} /> Edit
+                  <button
+                    className="btn secondary icon-only"
+                    aria-label="Edit model"
+                    onClick={() => onEdit(model)}
+                  >
+                    <EditIcon size={15} />
                   </button>
-                  <button className="btn danger" onClick={() => onDelete(model._id)}>
-                    <TrashIcon size={15} /> Delete
+                  <button
+                    className="btn danger icon-only"
+                    aria-label="Delete model"
+                    onClick={() => onDelete(model._id)}
+                  >
+                    <TrashIcon size={15} />
                   </button>
                 </div>
               </td>
