@@ -34,6 +34,12 @@ export const ClockIcon = (props) => (
   </Icon>
 )
 
+export const CheckIcon = (props) => (
+  <Icon {...props}>
+    <path d="M20 6 9 17l-5-5" />
+  </Icon>
+)
+
 export const PlusIcon = (props) => (
   <Icon {...props}>
     <path d="M12 5v14" />
@@ -74,6 +80,13 @@ export const NoteIcon = (props) => (
   </Icon>
 )
 
+export const MailIcon = (props) => (
+  <Icon {...props}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="m3 7 9 6 9-6" />
+  </Icon>
+)
+
 export const SunIcon = (props) => (
   <Icon {...props}>
     <circle cx="12" cy="12" r="4" />
@@ -94,11 +107,26 @@ export const MoonIcon = (props) => (
   </Icon>
 )
 
+export const UserIcon = (props) => (
+  <Icon {...props}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </Icon>
+)
+
 export const ShieldIcon = (props) => (
   <Icon {...props}>
     <path d="M12 3 4 7v5c0 5 3.5 9 8 9s8-4 8-9V7Z" />
     <path d="M9 12h6" />
     <path d="M9 16h6" />
+  </Icon>
+)
+
+export const LogoutIcon = (props) => (
+  <Icon {...props}>
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <path d="M16 17l5-5-5-5" />
+    <path d="M21 12H9" />
   </Icon>
 )
 
