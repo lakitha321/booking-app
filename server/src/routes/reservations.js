@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import Reservation from "../models/Reservation.js";
 import Slot from "../models/Slot.js";
 import User from "../models/User.js";
@@ -27,6 +28,14 @@ function validateTimingWithinSlot(slot, start, end) {
 }
 
 async function hydrateReservation(slotId, userId, notes, startDateTime, endDateTime) {
+  if (!mongoose.Types.ObjectId.isValid(slotId)) {
+    return { error: { code: 400, message: "Invalid slot id" } };
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return { error: { code: 400, message: "Invalid user id" } };
+  }
+
   const slot = await Slot.findById(slotId).populate("model");
   if (!slot) return { error: { code: 404, message: "Slot not found" } };
   if (!slot.isActive) return { error: { code: 400, message: "Slot is not active" } };
