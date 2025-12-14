@@ -40,6 +40,11 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
   if (!slot) return { error: { code: 404, message: "Slot not found" } };
   if (!slot.isActive) return { error: { code: 400, message: "Slot is not active" } };
 
+  const modelId = slot.model?._id || slot.model;
+  if (!modelId || !mongoose.Types.ObjectId.isValid(modelId)) {
+    return { error: { code: 400, message: "Slot is missing a valid model" } };
+  }
+
   const user = await User.findById(userId);
   if (!user) return { error: { code: 404, message: "User not found" } };
 
@@ -64,7 +69,7 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
       user: user._id,
       userName: `${user.firstName} ${user.lastName}`.trim(),
       userEmail: user.email,
-      model: slot.model?._id || slot.model,
+      model: modelId,
       slot: slot._id,
       startDateTime: start,
       endDateTime: end,
@@ -124,6 +129,11 @@ router.put("/my/:id", requireAuth, async (req, res) => {
     if (!slot) return res.status(404).json({ error: "Slot not found" });
     if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
 
+    const modelId = slot.model?._id || slot.model;
+    if (!modelId || !mongoose.Types.ObjectId.isValid(modelId)) {
+      return res.status(400).json({ error: "Slot is missing a valid model" });
+    }
+
     const nextStart = parsed.data.startDateTime ? new Date(parsed.data.startDateTime) : reservation.startDateTime;
     const nextEnd = parsed.data.endDateTime ? new Date(parsed.data.endDateTime) : reservation.endDateTime;
     const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
@@ -138,7 +148,7 @@ router.put("/my/:id", requireAuth, async (req, res) => {
     if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
-    reservation.model = slot.model;
+    reservation.model = modelId;
     reservation.startDateTime = nextStart;
     reservation.endDateTime = nextEnd;
 
@@ -229,6 +239,11 @@ router.put("/:id", async (req, res) => {
     if (!slot) return res.status(404).json({ error: "Slot not found" });
     if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
 
+    const modelId = slot.model?._id || slot.model;
+    if (!modelId || !mongoose.Types.ObjectId.isValid(modelId)) {
+      return res.status(400).json({ error: "Slot is missing a valid model" });
+    }
+
     const nextStart = parsed.data.startDateTime ? new Date(parsed.data.startDateTime) : reservation.startDateTime;
     const nextEnd = parsed.data.endDateTime ? new Date(parsed.data.endDateTime) : reservation.endDateTime;
     const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
@@ -243,7 +258,7 @@ router.put("/:id", async (req, res) => {
     if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
-    reservation.model = slot.model;
+    reservation.model = modelId;
     reservation.startDateTime = nextStart;
     reservation.endDateTime = nextEnd;
 
