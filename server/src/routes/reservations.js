@@ -13,6 +13,14 @@ import {
 
 const router = express.Router();
 
+function handleReservationError(res, error) {
+  if (error?.code === 11000) {
+    return res.status(409).json({ error: "You already have a reservation in this slot. Update it to reserve more time." });
+  }
+
+  return res.status(500).json({ error: "Server error" });
+}
+
 function validateTimingWithinSlot(slot, start, end) {
   if (!start || Number.isNaN(start.getTime()) || !end || Number.isNaN(end.getTime())) {
     return "Invalid start or end time";
@@ -100,7 +108,7 @@ router.post("/my", requireAuth, async (req, res) => {
     await reservation.populate(["user", "model", { path: "slot", populate: "model" }]);
     return res.status(201).json(reservation);
   } catch (e) {
-    return res.status(500).json({ error: "Server error" });
+    return handleReservationError(res, e);
   }
 });
 
@@ -111,7 +119,7 @@ router.get("/my/list", requireAuth, async (req, res) => {
     );
     return res.json(await reservations);
   } catch (e) {
-    return res.status(500).json({ error: "Server error" });
+    return handleReservationError(res, e);
   }
 });
 
