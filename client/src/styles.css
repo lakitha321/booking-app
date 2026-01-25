@@ -164,6 +164,18 @@ header {
   border: 1px solid var(--border);
 }
 
+.btn.ghost.danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
