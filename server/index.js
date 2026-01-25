@@ -7,6 +7,7 @@ import modelsRouter from "./src/routes/models.js";
 import authRouter from "./src/routes/auth.js";
 import reservationsRouter from "./src/routes/reservations.js";
 import sizesRouter from "./src/routes/sizes.js";
+import Reservation from "./src/models/Reservation.js";
 
 dotenv.config();
 
@@ -28,6 +29,18 @@ async function start() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ Mongo connected");
+    const reservationIndexes = await Reservation.collection.indexes();
+    const droppableIndexes = reservationIndexes.filter(
+      (index) => index.unique && index.name !== "_id_"
+    );
+    if (droppableIndexes.length) {
+      await Promise.all(
+        droppableIndexes.map(async (index) => {
+          await Reservation.collection.dropIndex(index.name);
+          console.log(`✅ Dropped reservation index: ${index.name}`);
+        })
+      );
+    }
     app.listen(PORT, () => console.log(`✅ Server running on ${PORT}`));
   } catch (e) {
     console.error("❌ Failed to start:", e);
