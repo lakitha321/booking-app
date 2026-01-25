@@ -53,6 +53,15 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
   const timingError = validateTimingWithinSlot(slot, start, end);
   if (timingError) return { error: { code: 400, message: timingError } };
 
+  const overlap = await Reservation.findOne({
+    slot: slot._id,
+    startDateTime: { $lt: end },
+    endDateTime: { $gt: start },
+  });
+  if (overlap) {
+    return { error: { code: 409, message: "Requested time overlaps an existing reservation" } };
+  }
+
   return {
     slot,
     user,
@@ -129,6 +138,14 @@ router.put("/my/:id", requireAuth, async (req, res) => {
     const nextEnd = parsed.data.endDateTime ? new Date(parsed.data.endDateTime) : reservation.endDateTime;
     const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
     if (timingError) return res.status(400).json({ error: timingError });
+
+    const overlap = await Reservation.findOne({
+      _id: { $ne: reservation._id },
+      slot: slot._id,
+      startDateTime: { $lt: nextEnd },
+      endDateTime: { $gt: nextStart },
+    });
+    if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
     reservation.model = modelId;
@@ -231,6 +248,14 @@ router.put("/:id", async (req, res) => {
     const nextEnd = parsed.data.endDateTime ? new Date(parsed.data.endDateTime) : reservation.endDateTime;
     const timingError = validateTimingWithinSlot(slot, nextStart, nextEnd);
     if (timingError) return res.status(400).json({ error: timingError });
+
+    const overlap = await Reservation.findOne({
+      _id: { $ne: reservation._id },
+      slot: slot._id,
+      startDateTime: { $lt: nextEnd },
+      endDateTime: { $gt: nextStart },
+    });
+    if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
     reservation.model = modelId;
