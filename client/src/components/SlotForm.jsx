@@ -191,7 +191,7 @@ export default function SlotForm({
             disabled={submitting}
             aria-label="Discard changes"
           >
-            <TrashIcon size={14} />
+            Cancel
           </button>
         )}
       </div>
