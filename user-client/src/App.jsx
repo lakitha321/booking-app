@@ -988,16 +988,7 @@ export default function App() {
   const openReservationDraft = (slot, reservationId = null) => {
     if (!slot) return
     setReservationError('')
-    let nextReservationId = reservationId
-    if (!nextReservationId) {
-      const existingReservations = reservations
-        .filter((res) => (res.slot?._id || res.slot) === slot._id)
-        .sort((a, b) => new Date(b.startDateTime) - new Date(a.startDateTime))
-      if (existingReservations.length) {
-        nextReservationId = existingReservations[0]._id
-      }
-    }
-    setReservationDraft({ slot, reservationId: nextReservationId })
+    setReservationDraft({ slot, reservationId })
   }
 
   const closeReservationDraft = () => setReservationDraft(null)
