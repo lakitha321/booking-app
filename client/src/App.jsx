@@ -22,40 +22,19 @@ import SizeForm from './components/SizeForm'
 import SizeTable from './components/SizeTable'
 import SlotForm from './components/SlotForm'
 import SlotTable from './components/SlotTable'
+import ThemeToggle from './components/ThemeToggle'
 import {
   CalendarIcon,
   ClockIcon,
   EditIcon,
-  MoonIcon,
   PlusIcon,
   PowerIcon,
   RefreshIcon,
   ShieldIcon,
-  SunIcon,
   UsersIcon,
 } from './icons'
-
-function toIso(datetimeLocal) {
-  return datetimeLocal ? new Date(datetimeLocal).toISOString() : ''
-}
-
-function ThemeToggle({ theme, onToggle }) {
-  const isDark = theme === 'dark'
-  return (
-    <button className="toggle" type="button" onClick={onToggle} aria-label="Toggle color theme">
-      {isDark ? <MoonIcon size={18} /> : <SunIcon size={18} />}
-      <span>{isDark ? 'Dark' : 'Light'} mode</span>
-    </button>
-  )
-}
-
-function getPreferredTheme() {
-  if (typeof window === 'undefined') return 'light'
-  const stored = localStorage.getItem('theme')
-  if (stored === 'light' || stored === 'dark') return stored
-  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-  return prefersDark ? 'dark' : 'light'
-}
+import { toIso } from './utils/date'
+import { applyTheme, getPreferredTheme } from './utils/theme'
 
 export default function App() {
   const [page, setPage] = useState('slots')
@@ -90,8 +69,7 @@ export default function App() {
   const [theme, setTheme] = useState(getPreferredTheme)
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
-    localStorage.setItem('theme', theme)
+    applyTheme(theme)
   }, [theme])
 
   const sortedSlots = useMemo(
