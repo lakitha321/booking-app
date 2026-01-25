@@ -77,6 +77,13 @@ function formatTimeRange(start, end, withDate = false) {
   return `${startLabel} → ${endLabel}`
 }
 
+function formatModelLabel(model) {
+  if (!model) return 'Model'
+  if (typeof model === 'string') return model
+  if (!model.name) return 'Model'
+  return `${model.name}${model.size?.name ? ` - ${model.size.name}` : ''}`
+}
+
 function buildAvailableWindows(slot, ignoreReservationId) {
   if (!slot) return []
   const slotStart = new Date(slot.startDateTime)
@@ -270,12 +277,16 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
   }, [myReservations])
   const grouped = useMemo(() => {
     const map = new Map()
-    models.forEach((model) => map.set(model._id, { model, slots: [] }))
+    models.forEach((model) => {
+      const label = formatModelLabel(model)
+      map.set(label, { model: { ...model, label }, slots: [] })
+    })
     activeSlots.forEach((slot) => {
-      const modelId = slot.model?._id || slot.model
-      if (map.has(modelId)) {
-        map.get(modelId).slots.push(slot)
+      const label = formatModelLabel(slot.model)
+      if (!map.has(label)) {
+        map.set(label, { model: { name: label, label }, slots: [] })
       }
+      map.get(label).slots.push(slot)
     })
     return Array.from(map.values())
   }, [models, activeSlots])
@@ -303,11 +314,11 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
 
       <div className="model-grid">
         {grouped.map(({ model, slots: modelSlots }) => (
-          <div key={model._id} className="model-card">
+          <div key={model.label || model.name} className="model-card">
             <div className="model-header">
-              <div className="model-avatar">{model.name.slice(0, 1).toUpperCase()}</div>
+              <div className="model-avatar">{(model.label || model.name).slice(0, 1).toUpperCase()}</div>
               <div>
-                <h3>{model.name}</h3>
+                <h3>{model.label || model.name}</h3>
                 <p className="helper">{modelSlots.length} active slot(s)</p>
               </div>
             </div>
@@ -516,7 +527,7 @@ function ReservationModal({ slot, reservationId, myReservations, user, onClose, 
       <div className="modal">
         <div className="modal-header">
           <div>
-            <p className="tag-pill">{slot.model?.name || 'Model'} availability</p>
+            <p className="tag-pill">{formatModelLabel(slot.model)} availability</p>
             <h3>Select your time</h3>
             <p className="helper">{formatTimeRange(slot.startDateTime, slot.endDateTime, true)}</p>
           </div>
@@ -678,7 +689,7 @@ function ReservationsView({ reservations, slots, onUpdate, onDelete, submitting 
       .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
       .map((slot) => ({
         id: slot._id,
-        label: `${slot.model?.name || 'Model'} — ${new Date(slot.startDateTime).toLocaleString()} → ${new Date(
+        label: `${formatModelLabel(slot.model)} — ${new Date(slot.startDateTime).toLocaleString()} → ${new Date(
           slot.endDateTime
         ).toLocaleString()}`,
       }))
@@ -735,7 +746,15 @@ function ReservationsView({ reservations, slots, onUpdate, onDelete, submitting 
           <tbody>
             {reservations.map((reservation) => (
               <tr key={reservation._id}>
-                <td>{reservation.model?.name || reservation.slot?.model?.name || 'Model'}</td>
+                <td>
+                  {typeof reservation.model === 'string'
+                    ? reservation.model
+                    : reservation.model?.name ||
+                      (typeof reservation.slot?.model === 'string'
+                        ? reservation.slot.model
+                        : reservation.slot?.model?.name) ||
+                      'Model'}
+                </td>
                 <td>
                   <div className="pill">
                     <CalendarIcon size={14} />

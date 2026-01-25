@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const SlotSchema = new mongoose.Schema(
   {
-    model: { type: mongoose.Schema.Types.ObjectId, ref: "Model", required: true },
+    model: { type: String, required: true, trim: true },
     startDateTime: { type: Date, required: true },
     endDateTime: { type: Date, required: true },
     notes: { type: String, trim: true, default: "" },

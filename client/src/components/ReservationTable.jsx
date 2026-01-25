@@ -17,7 +17,13 @@ export default function ReservationTable({ reservations = [], onEdit, onDelete }
       <tbody>
         {reservations.map((reservation) => (
           <tr key={reservation._id}>
-            <td>{reservation.model?.name || reservation.slot?.model?.name || 'Model'}</td>
+            <td>
+              {typeof reservation.model === 'string'
+                ? reservation.model
+                : reservation.model?.name ||
+                  (typeof reservation.slot?.model === 'string' ? reservation.slot.model : reservation.slot?.model?.name) ||
+                  'Model'}
+            </td>
             <td>
               <div className="pill">
                 <CalendarIcon size={14} />

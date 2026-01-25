@@ -36,12 +36,11 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
     return { error: { code: 400, message: "Invalid user id" } };
   }
 
-  const slot = await Slot.findById(slotId).populate("model");
+  const slot = await Slot.findById(slotId);
   if (!slot) return { error: { code: 404, message: "Slot not found" } };
   if (!slot.isActive) return { error: { code: 400, message: "Slot is not active" } };
 
-  const modelId = slot.model?._id || slot.model;
-  if (!modelId || !mongoose.Types.ObjectId.isValid(modelId)) {
+  if (!slot.model || (typeof slot.model === "string" && slot.model.trim().length === 0)) {
     return { error: { code: 400, message: "Slot is missing a valid model" } };
   }
 
@@ -69,7 +68,7 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
       user: user._id,
       userName: `${user.firstName} ${user.lastName}`.trim(),
       userEmail: user.email,
-      model: modelId,
+      model: slot.model,
       slot: slot._id,
       startDateTime: start,
       endDateTime: end,
@@ -79,7 +78,7 @@ async function hydrateReservation(slotId, userId, notes, startDateTime, endDateT
 }
 
 function populateReservation(query) {
-  return query.populate("user").populate("model").populate({ path: "slot", populate: "model" });
+  return query.populate("user").populate("slot");
 }
 
 router.post("/my", requireAuth, async (req, res) => {
@@ -97,7 +96,7 @@ router.post("/my", requireAuth, async (req, res) => {
     if (hydrated.error) return res.status(hydrated.error.code).json({ error: hydrated.error.message });
 
     const reservation = await Reservation.create(hydrated.reservation);
-    await reservation.populate(["user", "model", { path: "slot", populate: "model" }]);
+    await reservation.populate(["user", "slot"]);
     return res.status(201).json(reservation);
   } catch (e) {
     return res.status(500).json({ error: "Server error" });
@@ -125,12 +124,11 @@ router.put("/my/:id", requireAuth, async (req, res) => {
 
     const slot = parsed.data.slotId
       ? await Slot.findById(parsed.data.slotId)
-      : await Slot.findById(reservation.slot).populate("model");
+      : await Slot.findById(reservation.slot);
     if (!slot) return res.status(404).json({ error: "Slot not found" });
     if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
 
-    const modelId = slot.model?._id || slot.model;
-    if (!modelId || !mongoose.Types.ObjectId.isValid(modelId)) {
+    if (!slot.model || (typeof slot.model === "string" && slot.model.trim().length === 0)) {
       return res.status(400).json({ error: "Slot is missing a valid model" });
     }
 
@@ -148,14 +146,14 @@ router.put("/my/:id", requireAuth, async (req, res) => {
     if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
-    reservation.model = modelId;
+    reservation.model = slot.model;
     reservation.startDateTime = nextStart;
     reservation.endDateTime = nextEnd;
 
     if (parsed.data.notes !== undefined) reservation.notes = parsed.data.notes;
 
     await reservation.save();
-    await reservation.populate(["user", "model", { path: "slot", populate: "model" }]);
+    await reservation.populate(["user", "slot"]);
     return res.json(reservation);
   } catch (e) {
     return res.status(400).json({ error: "Invalid id" });
@@ -190,7 +188,7 @@ router.post("/", async (req, res) => {
     if (hydrated.error) return res.status(hydrated.error.code).json({ error: hydrated.error.message });
 
     const reservation = await Reservation.create(hydrated.reservation);
-    await reservation.populate(["user", "model", { path: "slot", populate: "model" }]);
+    await reservation.populate(["user", "slot"]);
     return res.status(201).json(reservation);
   } catch (e) {
     return res.status(500).json({ error: "Server error" });
@@ -234,13 +232,12 @@ router.put("/:id", async (req, res) => {
     }
 
     const slot = parsed.data.slotId
-      ? await Slot.findById(parsed.data.slotId).populate("model")
-      : await Slot.findById(reservation.slot).populate("model");
+      ? await Slot.findById(parsed.data.slotId)
+      : await Slot.findById(reservation.slot);
     if (!slot) return res.status(404).json({ error: "Slot not found" });
     if (!slot.isActive) return res.status(400).json({ error: "Slot is not active" });
 
-    const modelId = slot.model?._id || slot.model;
-    if (!modelId || !mongoose.Types.ObjectId.isValid(modelId)) {
+    if (!slot.model || (typeof slot.model === "string" && slot.model.trim().length === 0)) {
       return res.status(400).json({ error: "Slot is missing a valid model" });
     }
 
@@ -258,14 +255,14 @@ router.put("/:id", async (req, res) => {
     if (overlap) return res.status(409).json({ error: "Requested time overlaps an existing reservation" });
 
     reservation.slot = slot._id;
-    reservation.model = modelId;
+    reservation.model = slot.model;
     reservation.startDateTime = nextStart;
     reservation.endDateTime = nextEnd;
 
     if (parsed.data.notes !== undefined) reservation.notes = parsed.data.notes;
 
     await reservation.save();
-    await reservation.populate(["user", "model", { path: "slot", populate: "model" }]);
+    await reservation.populate(["user", "slot"]);
     return res.json(reservation);
   } catch (e) {
     return res.status(400).json({ error: "Invalid id" });
