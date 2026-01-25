@@ -255,7 +255,7 @@ export default function ReservationModal({ slot, reservationId, myReservations, 
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <button className="btn secondary icon-only" type="button" onClick={onClose} disabled={submitting}>
-              <TrashIcon size={14} />
+              Cancel
             </button>
             <button className="btn primary" type="submit" disabled={submitting || (!hasAvailability && !activeReservation)}>
               {submitting
