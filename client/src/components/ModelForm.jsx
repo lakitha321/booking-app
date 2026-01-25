@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NoteIcon, UsersIcon } from '../icons'
+import { NoteIcon, TrashIcon, UsersIcon } from '../icons'
 
 export default function ModelForm({
   onSubmit,
@@ -92,8 +92,14 @@ export default function ModelForm({
           {submitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create model'}
         </button>
         {mode === 'edit' && (
-          <button className="btn secondary" type="button" onClick={onCancel} disabled={submitting}>
-            Cancel
+          <button
+            className="btn secondary icon-only"
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            aria-label="Discard changes"
+          >
+            <TrashIcon size={14} />
           </button>
         )}
       </div>

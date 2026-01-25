@@ -14,12 +14,14 @@ import {
   CalendarIcon,
   CheckIcon,
   ClockIcon,
+  EditIcon,
   LogoutIcon,
   MailIcon,
   MoonIcon,
   RefreshIcon,
   ShieldIcon,
   SunIcon,
+  TrashIcon,
   UserIcon,
   UsersIcon,
 } from './icons'
@@ -71,9 +73,14 @@ function formatDuration(minutes) {
 function formatTimeRange(start, end, withDate = false) {
   const startDate = new Date(start)
   const endDate = new Date(end)
-  const dateOptions = withDate ? undefined : { hour: 'numeric', minute: '2-digit' }
-  const startLabel = startDate.toLocaleString(undefined, dateOptions)
-  const endLabel = endDate.toLocaleString(undefined, dateOptions)
+  const sameDay = startDate.toDateString() === endDate.toDateString()
+  const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit' }
+  const startLabel = withDate ? startDate.toLocaleString() : startDate.toLocaleTimeString(undefined, timeOptions)
+  const endLabel = withDate
+    ? sameDay
+      ? endDate.toLocaleTimeString(undefined, timeOptions)
+      : endDate.toLocaleString()
+    : endDate.toLocaleTimeString(undefined, timeOptions)
   return `${startLabel} → ${endLabel}`
 }
 
@@ -264,7 +271,7 @@ function SlotTimeline({ slot, selection, highlightUserId, compact = false }) {
   )
 }
 
-function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myReservations, submitting, user }) {
+function AvailabilityView({ models, slots, loading, onRefresh, onReserve, onDelete, myReservations, submitting, user }) {
   const activeSlots = useMemo(() => slots.filter((slot) => slot.isActive), [slots])
   const reservationMap = useMemo(() => {
     const map = new Map()
@@ -360,14 +367,26 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
                                 <span className="pill neutral">{'Booked'}</span>
                               )}
                               {isMine && (
-                                <button
-                                  className="btn tertiary"
-                                  type="button"
-                                  onClick={() => onReserve(slot, res._id)}
-                                  disabled={submitting}
-                                >
-                                  Edit
-                                </button>
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <button
+                                    className="btn tertiary icon-only"
+                                    type="button"
+                                    aria-label="Update reservation"
+                                    onClick={() => onReserve(slot, res._id)}
+                                    disabled={submitting}
+                                  >
+                                    <EditIcon size={14} />
+                                  </button>
+                                  <button
+                                    className="btn ghost danger icon-only"
+                                    type="button"
+                                    aria-label="Remove reservation"
+                                    onClick={() => onDelete(res._id)}
+                                    disabled={submitting}
+                                  >
+                                    <TrashIcon size={14} />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )
@@ -511,7 +530,7 @@ function ReservationModal({ slot, reservationId, myReservations, user, onClose, 
     }
 
     if (!hasAvailability && !activeReservation) {
-      setError('This slot is fully booked. Pick another slot or edit an existing reservation.')
+      setError('This slot is fully booked. Pick another slot or update an existing reservation.')
       return
     }
 
@@ -644,8 +663,8 @@ function ReservationModal({ slot, reservationId, myReservations, user, onClose, 
           <p className="helper">Selected duration: {formatDuration(selectionDuration)}.</p>
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button className="btn secondary" type="button" onClick={onClose} disabled={submitting}>
-              Cancel
+            <button className="btn secondary icon-only" type="button" onClick={onClose} disabled={submitting}>
+              <TrashIcon size={14} />
             </button>
             <button className="btn primary" type="submit" disabled={submitting || (!hasAvailability && !activeReservation)}>
               {submitting
@@ -658,7 +677,7 @@ function ReservationModal({ slot, reservationId, myReservations, user, onClose, 
 
           {error && <div className="error">{error}</div>}
           {!hasAvailability && !activeReservation && (
-            <p className="helper">This slot is fully booked. Pick a different slot or edit an existing one.</p>
+            <p className="helper">This slot is fully booked. Pick a different slot or update an existing one.</p>
           )}
         </form>
       </div>
@@ -691,9 +710,7 @@ function ReservationsView({ reservations, slots, onUpdate, onDelete, submitting 
       .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
       .map((slot) => ({
         id: slot._id,
-        label: `${formatModelLabel(slot.model)} — ${new Date(slot.startDateTime).toLocaleString()} → ${new Date(
-          slot.endDateTime
-        ).toLocaleString()}`,
+        label: `${formatModelLabel(slot.model)} — ${formatTimeRange(slot.startDateTime, slot.endDateTime, true)}`,
       }))
   }, [slots, form.slotId])
 
@@ -729,7 +746,7 @@ function ReservationsView({ reservations, slots, onUpdate, onDelete, submitting 
           <h2>
             <CalendarIcon size={18} /> Your reservations
           </h2>
-          <p className="subtitle">Update or cancel reservations you created.</p>
+          <p className="subtitle">Update or remove reservations you created.</p>
         </div>
       </div>
 
@@ -761,18 +778,22 @@ function ReservationsView({ reservations, slots, onUpdate, onDelete, submitting 
                   <div className="pill">
                     <CalendarIcon size={14} />
                     <span>
-                      {new Date(reservation.startDateTime).toLocaleString()} →{' '}
-                      {new Date(reservation.endDateTime).toLocaleString()}
+                      {formatTimeRange(reservation.startDateTime, reservation.endDateTime, true)}
                     </span>
                   </div>
                 </td>
                 <td className="mono">{reservation.notes || '—'}</td>
                 <td className="actions">
-                  <button className="btn tertiary" onClick={() => setEditing(reservation)}>
-                    Edit
+                  <button className="btn tertiary icon-only" onClick={() => setEditing(reservation)} aria-label="Update reservation">
+                    <EditIcon size={14} />
                   </button>
-                  <button className="btn ghost danger" onClick={() => onDelete(reservation._id)} disabled={submitting}>
-                    Cancel
+                  <button
+                    className="btn ghost danger icon-only"
+                    onClick={() => onDelete(reservation._id)}
+                    disabled={submitting}
+                    aria-label="Remove reservation"
+                  >
+                    <TrashIcon size={14} />
                   </button>
                 </td>
               </tr>
@@ -850,8 +871,14 @@ function ReservationsView({ reservations, slots, onUpdate, onDelete, submitting 
             <button className="btn primary" type="submit" disabled={submitting}>
               {submitting ? 'Saving…' : 'Save changes'}
             </button>
-            <button className="btn secondary" type="button" onClick={() => setEditing(null)} disabled={submitting}>
-              Cancel
+            <button
+              className="btn secondary icon-only"
+              type="button"
+              onClick={() => setEditing(null)}
+              disabled={submitting}
+              aria-label="Discard changes"
+            >
+              <TrashIcon size={14} />
             </button>
           </div>
 
@@ -1065,7 +1092,7 @@ export default function App() {
 
   const handleDeleteReservation = async (id) => {
     if (!token) return
-    if (!confirm('Cancel this reservation?')) return
+    if (!confirm('Remove this reservation?')) return
     setReservationError('')
     try {
       await deleteMyReservation(token, id)
@@ -1175,6 +1202,7 @@ export default function App() {
               loading={loadingData}
               onRefresh={() => loadData(token)}
               onReserve={openReservationDraft}
+              onDelete={handleDeleteReservation}
               myReservations={reservations}
               submitting={reservationSubmitting}
               user={user}
