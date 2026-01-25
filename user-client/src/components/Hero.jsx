@@ -1,3 +1,5 @@
+import { API_BASE } from '../../../apiBase.js'
+
 export default function Hero() {
   return (
     <header className="hero">
@@ -11,7 +13,7 @@ export default function Hero() {
         <div className="status-line">
           <span className="status-dot" />
           <span>API base:</span>
-          <code className="code">{import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}</code>
+          <code className="code">{API_BASE}</code>
         </div>
       </div>
     </header>

@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE?.replace(/\/$/, '') || 'http://localhost:5000/api';
+import { API_BASE } from '../../apiBase.js';
 
 async function handleResponse(res) {
   const contentType = res.headers.get('content-type') || '';

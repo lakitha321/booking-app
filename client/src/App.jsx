@@ -23,6 +23,7 @@ import SizeTable from './components/SizeTable'
 import SlotForm from './components/SlotForm'
 import SlotTable from './components/SlotTable'
 import ThemeToggle from './components/ThemeToggle'
+import { API_BASE } from '../../apiBase.js'
 import {
   CalendarIcon,
   ClockIcon,
@@ -326,7 +327,7 @@ export default function App() {
           <div className="status-line">
             <span className="status-dot"></span>
             <span>API base:</span>
-            <code className="code">{import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'}</code>
+            <code className="code">{API_BASE}</code>
           </div>
         </div>
         <div className="toolbar">
