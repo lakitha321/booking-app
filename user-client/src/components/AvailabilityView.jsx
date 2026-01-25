@@ -103,9 +103,18 @@ export default function AvailabilityView({ models, slots, loading, onRefresh, on
                       {slot.reservations?.length ? (
                         slot.reservations.map((res) => {
                           const isMine = res.user === user?.id || res.user?._id === user?.id
+                          const reservedLabel = isMine ? 'you' : res.userName || res.userEmail || 'guest'
                           return (
                             <div key={res._id} className={isMine ? 'reservation-chip mine' : 'reservation-chip'}>
-                              <span className="mono">{formatTimeRange(res.startDateTime, res.endDateTime)}</span>
+                              <div className="reservation-chip-content">
+                                <span className="mono">{formatTimeRange(res.startDateTime, res.endDateTime)}</span>
+                                <span className="reservation-byline">
+                                  reserved by{' '}
+                                  <span className={isMine ? 'reserved-name mine' : 'reserved-name other'}>
+                                    {reservedLabel}
+                                  </span>
+                                </span>
+                              </div>
                               {isMine === false && (
                                 <span className="pill neutral">{'Booked'}</span>
                               )}
