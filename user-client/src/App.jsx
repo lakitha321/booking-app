@@ -81,41 +81,15 @@ function buildAvailableWindows(slot, ignoreReservationId) {
   if (!slot) return []
   const slotStart = new Date(slot.startDateTime)
   const slotEnd = new Date(slot.endDateTime)
-
-  const reservations = [...(slot.reservations || [])]
-    .filter((res) => (res._id || '').toString() !== (ignoreReservationId || '').toString())
-    .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
-
-  const windows = []
-  let cursor = slotStart
-
-  reservations.forEach((res) => {
-    const resStart = new Date(res.startDateTime)
-    const resEnd = new Date(res.endDateTime)
-    if (resStart > cursor) {
-      windows.push({ start: cursor, end: resStart })
-    }
-    if (resEnd > cursor) cursor = resEnd
-  })
-
-  if (cursor < slotEnd) {
-    windows.push({ start: cursor, end: slotEnd })
-  }
-
-  return windows
+  void ignoreReservationId
+  return [{ start: slotStart, end: slotEnd }]
 }
 
 function remainingMinutesForSlot(slot) {
   if (!slot) return 0
   const start = new Date(slot.startDateTime)
   const end = new Date(slot.endDateTime)
-  const total = minutesBetween(start, end)
-  const reserved = (slot.reservations || []).reduce((sum, res) => {
-    const resStart = new Date(res.startDateTime)
-    const resEnd = new Date(res.endDateTime)
-    return sum + minutesBetween(resStart, resEnd)
-  }, 0)
-  return Math.max(0, total - reserved)
+  return minutesBetween(start, end)
 }
 
 function AuthPanel({ mode, onModeChange, onLogin, onRegister, loading, error }) {
@@ -483,17 +457,6 @@ function ReservationModal({ slot, reservationId, myReservations, user, onClose, 
     }
     if (start < slotStart || end > slotEnd) {
       setError('Please choose times within the available slot window.')
-      return
-    }
-
-    const overlaps = slotReservations.some((res) => {
-      if (activeReservation && res._id === activeReservation._id) return false
-      const resStart = new Date(res.startDateTime)
-      const resEnd = new Date(res.endDateTime)
-      return resStart < end && resEnd > start
-    })
-    if (overlaps) {
-      setError('That time overlaps an existing reservation on this slot.')
       return
     }
 
