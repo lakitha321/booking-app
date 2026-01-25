@@ -1,18 +1,26 @@
 import { useEffect, useState } from 'react'
 import { NoteIcon, UsersIcon } from '../icons'
 
-export default function ModelForm({ onSubmit, onCancel, initialData = null, submitting, mode, resetSignal }) {
-  const [form, setForm] = useState({ name: '', nic: '', notes: '' })
+export default function ModelForm({
+  onSubmit,
+  onCancel,
+  initialData = null,
+  submitting,
+  mode,
+  resetSignal,
+  sizes = [],
+}) {
+  const [form, setForm] = useState({ name: '', sizeId: '', notes: '' })
 
   useEffect(() => {
     if (initialData) {
       setForm({
         name: initialData.name || '',
-        nic: initialData.nic || '',
+        sizeId: initialData.size?._id || initialData.size || '',
         notes: initialData.notes || '',
       })
     } else {
-      setForm({ name: '', nic: '', notes: '' })
+      setForm({ name: '', sizeId: '', notes: '' })
     }
   }, [initialData, resetSignal])
 
@@ -44,17 +52,26 @@ export default function ModelForm({ onSubmit, onCancel, initialData = null, subm
       </div>
 
       <div className="form-row">
-        <label htmlFor="nic">
-          <UsersIcon size={16} /> NIC
+        <label htmlFor="sizeId">
+          <UsersIcon size={16} /> Size *
         </label>
-        <input
-          id="nic"
-          name="nic"
-          type="text"
-          placeholder="Optional nic"
-          value={form.nic}
+        <select
+          id="sizeId"
+          name="sizeId"
+          required
+          value={form.sizeId}
           onChange={handleChange}
-        />
+          disabled={!sizes.length}
+        >
+          <option value="" disabled>
+            {sizes.length ? 'Select a size' : 'Create a size first'}
+          </option>
+          {sizes.map((size) => (
+            <option key={size._id} value={size._id}>
+              {size.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-row">

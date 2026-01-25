@@ -5,15 +5,21 @@ import {
   deleteModel,
   deleteSlot,
   fetchModels,
+  fetchSizes,
   fetchSlots,
   fetchReservations,
   updateModel,
   deleteReservation,
   updateSlot,
+  createSize,
+  updateSize,
+  deleteSize,
 } from './api'
 import ModelForm from './components/ModelForm'
 import ModelTable from './components/ModelTable'
 import ReservationTable from './components/ReservationTable'
+import SizeForm from './components/SizeForm'
+import SizeTable from './components/SizeTable'
 import SlotForm from './components/SlotForm'
 import SlotTable from './components/SlotTable'
 import {
@@ -55,24 +61,30 @@ export default function App() {
 
   const [slots, setSlots] = useState([])
   const [models, setModels] = useState([])
+  const [sizes, setSizes] = useState([])
   const [reservations, setReservations] = useState([])
 
   const [slotLoading, setSlotLoading] = useState(false)
   const [modelLoading, setModelLoading] = useState(false)
+  const [sizeLoading, setSizeLoading] = useState(false)
   const [reservationLoading, setReservationLoading] = useState(false)
 
   const [slotError, setSlotError] = useState('')
   const [modelError, setModelError] = useState('')
+  const [sizeError, setSizeError] = useState('')
   const [reservationError, setReservationError] = useState('')
 
   const [slotSubmitting, setSlotSubmitting] = useState(false)
   const [modelSubmitting, setModelSubmitting] = useState(false)
+  const [sizeSubmitting, setSizeSubmitting] = useState(false)
 
   const [editingSlot, setEditingSlot] = useState(null)
   const [editingModel, setEditingModel] = useState(null)
+  const [editingSize, setEditingSize] = useState(null)
 
   const [slotFormReset, setSlotFormReset] = useState(0)
   const [modelFormReset, setModelFormReset] = useState(0)
+  const [sizeFormReset, setSizeFormReset] = useState(0)
 
   const [theme, setTheme] = useState(getPreferredTheme)
 
@@ -89,6 +101,11 @@ export default function App() {
   const sortedModels = useMemo(
     () => [...models].sort((a, b) => a.name.localeCompare(b.name)),
     [models]
+  )
+
+  const sortedSizes = useMemo(
+    () => [...sizes].sort((a, b) => a.name.localeCompare(b.name)),
+    [sizes]
   )
 
   const sortedReservations = useMemo(
@@ -113,6 +130,19 @@ export default function App() {
       setModelError(e.message)
     } finally {
       setModelLoading(false)
+    }
+  }
+
+  const loadSizes = async () => {
+    setSizeLoading(true)
+    setSizeError('')
+    try {
+      const data = await fetchSizes()
+      setSizes(data)
+    } catch (e) {
+      setSizeError(e.message)
+    } finally {
+      setSizeLoading(false)
     }
   }
 
@@ -144,6 +174,7 @@ export default function App() {
 
   useEffect(() => {
     loadModels()
+    loadSizes()
     loadSlots()
     loadReservations()
   }, [])
@@ -241,6 +272,58 @@ export default function App() {
     }
   }
 
+  const handleSizeCreate = async (form) => {
+    setSizeSubmitting(true)
+    setSizeError('')
+    try {
+      const created = await createSize(form)
+      setSizes((prev) => [...prev, created])
+      setEditingSize(null)
+      setSizeFormReset((v) => v + 1)
+    } catch (e) {
+      setSizeError(e.message)
+    } finally {
+      setSizeSubmitting(false)
+    }
+  }
+
+  const handleSizeUpdate = async (form) => {
+    if (!editingSize) return
+    setSizeSubmitting(true)
+    setSizeError('')
+    try {
+      const updated = await updateSize(editingSize._id, form)
+      setSizes((prev) => prev.map((size) => (size._id === updated._id ? updated : size)))
+      setModels((prev) =>
+        prev.map((model) =>
+          model.size?._id === updated._id
+            ? { ...model, size: { ...model.size, name: updated.name } }
+            : model
+        )
+      )
+      setEditingSize(null)
+      setSizeFormReset((v) => v + 1)
+    } catch (e) {
+      setSizeError(e.message)
+    } finally {
+      setSizeSubmitting(false)
+    }
+  }
+
+  const handleSizeDelete = async (id) => {
+    if (!confirm('Delete this size?')) return
+    setSizeError('')
+    try {
+      await deleteSize(id)
+      setSizes((prev) => prev.filter((size) => size._id !== id))
+      setModels((prev) =>
+        prev.map((model) => (model.size?._id === id ? { ...model, size: null } : model))
+      )
+    } catch (e) {
+      setSizeError(e.message)
+    }
+  }
+
   const handleReservationDelete = async (id) => {
     if (!confirm('Delete this reservation?')) return
     setReservationError('')
@@ -327,6 +410,9 @@ export default function App() {
         <button className={page === 'models' ? 'tab active' : 'tab'} onClick={() => setPage('models')}>
           <UsersIcon size={16} /> Models
         </button>
+        <button className={page === 'sizes' ? 'tab active' : 'tab'} onClick={() => setPage('sizes')}>
+          <UsersIcon size={16} /> Sizes
+        </button>
         <button
           className={page === 'reservations' ? 'tab active' : 'tab'}
           onClick={() => setPage('reservations')}
@@ -404,7 +490,13 @@ export default function App() {
               onCancel={() => setEditingModel(null)}
               submitting={modelSubmitting}
               resetSignal={modelFormReset}
+              sizes={sortedSizes}
             />
+            {!sortedSizes.length && (
+              <p className="helper" style={{ marginTop: 8 }}>
+                Create a size first to add models.
+              </p>
+            )}
           </div>
 
           <div className="card">
@@ -420,6 +512,45 @@ export default function App() {
             </div>
             {modelError && <div className="error">{modelError}</div>}
             <ModelTable models={sortedModels} onEdit={setEditingModel} onDelete={handleModelDelete} />
+          </div>
+        </div>
+      )}
+
+      {page === 'sizes' && (
+        <div className="grid two">
+          <div className="card">
+            <div className="control-bar">
+              <div>
+                <h2>
+                  <PlusIcon size={18} /> {editingSize ? 'Edit size' : 'Create size'}
+                </h2>
+                <p className="subtitle">Size name is required and must be unique.</p>
+              </div>
+            </div>
+            {sizeError && <div className="error">{sizeError}</div>}
+            <SizeForm
+              mode={editingSize ? 'edit' : 'create'}
+              initialData={editingSize}
+              onSubmit={editingSize ? handleSizeUpdate : handleSizeCreate}
+              onCancel={() => setEditingSize(null)}
+              submitting={sizeSubmitting}
+              resetSignal={sizeFormReset}
+            />
+          </div>
+
+          <div className="card">
+            <div className="control-bar">
+              <h2>
+                <UsersIcon size={18} /> Sizes
+              </h2>
+              <div className="section-actions">
+                <button className="btn secondary" onClick={loadSizes} disabled={sizeLoading}>
+                  <RefreshIcon size={16} /> {sizeLoading ? 'Refreshing…' : 'Reload'}
+                </button>
+              </div>
+            </div>
+            {sizeError && <div className="error">{sizeError}</div>}
+            <SizeTable sizes={sortedSizes} onEdit={setEditingSize} onDelete={handleSizeDelete} />
           </div>
         </div>
       )}

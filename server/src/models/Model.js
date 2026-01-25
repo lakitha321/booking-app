@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const ModelSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, unique: true, trim: true },
-    nic: { type: String, trim: true, default: "" },
+    size: { type: mongoose.Schema.Types.ObjectId, ref: "Size", required: true },
     notes: { type: String, trim: true, default: "" },
   },
   { timestamps: true }

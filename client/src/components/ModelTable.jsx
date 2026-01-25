@@ -12,7 +12,7 @@ export default function ModelTable({ models, onEdit, onDelete }) {
         <thead>
           <tr>
             <th>Name</th>
-            <th>NIC</th>
+            <th>Size</th>
             <th>Notes</th>
             <th></th>
           </tr>
@@ -25,7 +25,7 @@ export default function ModelTable({ models, onEdit, onDelete }) {
                   <UsersIcon size={16} /> {model.name}
                 </div>
               </td>
-              <td>{model.nic || '—'}</td>
+              <td>{model.size?.name || '—'}</td>
               <td>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: model.notes ? undefined : 'var(--text-secondary)' }}>
                   <NoteIcon size={14} /> {model.notes || '—'}
