@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { UsersIcon } from '../icons'
+import { TrashIcon, UsersIcon } from '../icons'
 
 export default function SizeForm({ onSubmit, onCancel, initialData = null, submitting, mode, resetSignal }) {
   const [form, setForm] = useState({ name: '' })
@@ -44,8 +44,14 @@ export default function SizeForm({ onSubmit, onCancel, initialData = null, submi
           {submitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create size'}
         </button>
         {mode === 'edit' && (
-          <button className="btn secondary" type="button" onClick={onCancel} disabled={submitting}>
-            Cancel
+          <button
+            className="btn secondary icon-only"
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            aria-label="Discard changes"
+          >
+            <TrashIcon size={14} />
           </button>
         )}
       </div>

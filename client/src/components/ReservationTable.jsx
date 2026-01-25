@@ -1,4 +1,14 @@
-import { CalendarIcon, MailIcon, TrashIcon } from '../icons'
+import { CalendarIcon, EditIcon, MailIcon, TrashIcon } from '../icons'
+
+function formatTimeRange(start, end) {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const sameDay = startDate.toDateString() === endDate.toDateString()
+  const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit' }
+  const startLabel = startDate.toLocaleString()
+  const endLabel = sameDay ? endDate.toLocaleTimeString(undefined, timeOptions) : endDate.toLocaleString()
+  return `${startLabel} → ${endLabel}`
+}
 
 export default function ReservationTable({ reservations = [], onEdit, onDelete }) {
   if (!reservations.length) return <p className="helper">No reservations yet.</p>
@@ -28,8 +38,7 @@ export default function ReservationTable({ reservations = [], onEdit, onDelete }
               <div className="pill">
                 <CalendarIcon size={14} />
                 <span>
-                  {new Date(reservation.startDateTime).toLocaleString()} →{' '}
-                  {new Date(reservation.endDateTime).toLocaleString()}
+                  {formatTimeRange(reservation.startDateTime, reservation.endDateTime)}
                 </span>
               </div>
             </td>
@@ -41,12 +50,12 @@ export default function ReservationTable({ reservations = [], onEdit, onDelete }
             <td className="mono">{reservation.notes || '—'}</td>
             <td className="actions">
               {onEdit && (
-                <button className="btn tertiary" onClick={() => onEdit(reservation)}>
-                  Edit
+                <button className="btn tertiary icon-only" onClick={() => onEdit(reservation)} aria-label="Update reservation">
+                  <EditIcon size={14} />
                 </button>
               )}
-              <button className="btn ghost danger" onClick={() => onDelete(reservation._id)}>
-                <TrashIcon size={14} /> Delete
+              <button className="btn ghost danger icon-only" onClick={() => onDelete(reservation._id)} aria-label="Delete reservation">
+                <TrashIcon size={14} />
               </button>
             </td>
           </tr>

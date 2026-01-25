@@ -25,6 +25,7 @@ import SlotTable from './components/SlotTable'
 import {
   CalendarIcon,
   ClockIcon,
+  EditIcon,
   MoonIcon,
   PlusIcon,
   PowerIcon,
@@ -427,7 +428,15 @@ export default function App() {
             <div className="control-bar">
               <div>
                 <h2>
-                  <PlusIcon size={18} /> {editingSlot ? 'Edit slot' : 'Create slot'}
+                  {editingSlot ? (
+                    <>
+                      <EditIcon size={18} /> Update slot
+                    </>
+                  ) : (
+                    <>
+                      <PlusIcon size={18} /> Create slot
+                    </>
+                  )}
                 </h2>
                 <p className="subtitle">Pick a model, then set start and end times in your local timezone.</p>
               </div>
@@ -477,7 +486,15 @@ export default function App() {
             <div className="control-bar">
               <div>
                 <h2>
-                  <PlusIcon size={18} /> {editingModel ? 'Edit model' : 'Create model'}
+                  {editingModel ? (
+                    <>
+                      <EditIcon size={18} /> Update model
+                    </>
+                  ) : (
+                    <>
+                      <PlusIcon size={18} /> Create model
+                    </>
+                  )}
                 </h2>
                 <p className="subtitle">Model name is required and must be unique.</p>
               </div>
@@ -522,7 +539,15 @@ export default function App() {
             <div className="control-bar">
               <div>
                 <h2>
-                  <PlusIcon size={18} /> {editingSize ? 'Edit size' : 'Create size'}
+                  {editingSize ? (
+                    <>
+                      <EditIcon size={18} /> Update size
+                    </>
+                  ) : (
+                    <>
+                      <PlusIcon size={18} /> Create size
+                    </>
+                  )}
                 </h2>
                 <p className="subtitle">Size name is required and must be unique.</p>
               </div>

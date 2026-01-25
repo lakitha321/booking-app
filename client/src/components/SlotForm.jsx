@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarIcon, NoteIcon, PowerIcon } from '../icons'
+import { CalendarIcon, NoteIcon, PowerIcon, TrashIcon } from '../icons'
 
 function toLocalParts(value) {
   if (!value) return { date: '', time: '' }
@@ -184,8 +184,14 @@ export default function SlotForm({
           {submitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create slot'}
         </button>
         {mode === 'edit' && (
-          <button className="btn secondary" type="button" onClick={onCancel} disabled={submitting}>
-            Cancel
+          <button
+            className="btn secondary icon-only"
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            aria-label="Discard changes"
+          >
+            <TrashIcon size={14} />
           </button>
         )}
       </div>

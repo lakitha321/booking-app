@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarIcon, MailIcon, NoteIcon } from '../icons'
+import { CalendarIcon, MailIcon, NoteIcon, TrashIcon } from '../icons'
+
+function formatTimeRange(start, end) {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const sameDay = startDate.toDateString() === endDate.toDateString()
+  const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit' }
+  const startLabel = startDate.toLocaleString()
+  const endLabel = sameDay ? endDate.toLocaleTimeString(undefined, timeOptions) : endDate.toLocaleString()
+  return `${startLabel} → ${endLabel}`
+}
 
 export default function ReservationForm({
   mode = 'create',
@@ -32,9 +42,10 @@ export default function ReservationForm({
         .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
         .map((slot) => ({
           id: slot._id,
-          label: `${typeof slot.model === 'string' ? slot.model : slot.model?.name || 'Model'} — ${new Date(
-            slot.startDateTime
-          ).toLocaleString()} → ${new Date(slot.endDateTime).toLocaleString()}`,
+          label: `${typeof slot.model === 'string' ? slot.model : slot.model?.name || 'Model'} — ${formatTimeRange(
+            slot.startDateTime,
+            slot.endDateTime
+          )}`,
         })),
     [slots]
   )
@@ -105,8 +116,14 @@ export default function ReservationForm({
           {submitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create reservation'}
         </button>
         {mode === 'edit' && (
-          <button className="btn secondary" type="button" onClick={onCancel} disabled={submitting}>
-            Cancel
+          <button
+            className="btn secondary icon-only"
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            aria-label="Discard changes"
+          >
+            <TrashIcon size={14} />
           </button>
         )}
       </div>
