@@ -189,7 +189,7 @@ export default function ReservationsView({ reservations, slots, onUpdate, onDele
               {submitting ? 'Saving…' : 'Save changes'}
             </button>
             <button
-              className="btn secondary icon-only"
+              className="btn ghost danger icon-only"
               type="button"
               onClick={() => setEditing(null)}
               disabled={submitting}

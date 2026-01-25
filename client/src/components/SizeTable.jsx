@@ -33,7 +33,7 @@ export default function SizeTable({ sizes, onEdit, onDelete }) {
                     <EditIcon size={15} />
                   </button>
                   <button
-                    className="btn danger icon-only"
+                    className="btn ghost danger icon-only"
                     aria-label="Delete size"
                     onClick={() => onDelete(size._id)}
                   >

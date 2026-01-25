@@ -93,7 +93,7 @@ export default function ModelForm({
         </button>
         {mode === 'edit' && (
           <button
-            className="btn secondary icon-only"
+            className="btn ghost danger icon-only"
             type="button"
             onClick={onCancel}
             disabled={submitting}
