@@ -58,7 +58,7 @@ export default function SlotTable({ slots, onEdit, onDelete }) {
                     <EditIcon size={15} />
                   </button>
                   <button
-                    className="btn danger icon-only"
+                    className="btn ghost danger icon-only"
                     aria-label="Delete slot"
                     onClick={() => onDelete(slot._id)}
                   >

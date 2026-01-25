@@ -41,7 +41,7 @@ export default function ModelTable({ models, onEdit, onDelete }) {
                     <EditIcon size={15} />
                   </button>
                   <button
-                    className="btn danger icon-only"
+                    className="btn ghost danger icon-only"
                     aria-label="Delete model"
                     onClick={() => onDelete(model._id)}
                   >
