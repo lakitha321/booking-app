@@ -1,7 +1,8 @@
-import { API_BASE } from '../../apiBase.js'
+import { API_BASE, API_HEADERS } from '../../apiBase.js'
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, options)
+  const mergedHeaders = { ...API_HEADERS, ...options.headers }
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers: mergedHeaders })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     const err = data?.error

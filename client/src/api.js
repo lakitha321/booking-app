@@ -1,4 +1,8 @@
-import { API_BASE } from '../../apiBase.js';
+import { API_BASE, API_HEADERS } from '../../apiBase.js';
+
+function withBaseHeaders(headers) {
+  return { ...API_HEADERS, ...headers };
+}
 
 async function handleResponse(res) {
   const contentType = res.headers.get('content-type') || '';
@@ -11,14 +15,16 @@ async function handleResponse(res) {
 }
 
 export async function fetchSlots() {
-  const res = await fetch(`${API_BASE}/slots`);
+  const res = await fetch(`${API_BASE}/slots`, {
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function createSlot(payload) {
   const res = await fetch(`${API_BASE}/slots`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
@@ -27,26 +33,31 @@ export async function createSlot(payload) {
 export async function updateSlot(id, payload) {
   const res = await fetch(`${API_BASE}/slots/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
 }
 
 export async function deleteSlot(id) {
-  const res = await fetch(`${API_BASE}/slots/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/slots/${id}`, {
+    method: 'DELETE',
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function fetchReservations() {
-  const res = await fetch(`${API_BASE}/reservations`);
+  const res = await fetch(`${API_BASE}/reservations`, {
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function createReservation(payload) {
   const res = await fetch(`${API_BASE}/reservations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
@@ -55,26 +66,31 @@ export async function createReservation(payload) {
 export async function updateReservation(id, payload) {
   const res = await fetch(`${API_BASE}/reservations/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
 }
 
 export async function deleteReservation(id) {
-  const res = await fetch(`${API_BASE}/reservations/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/reservations/${id}`, {
+    method: 'DELETE',
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function fetchModels() {
-  const res = await fetch(`${API_BASE}/models`);
+  const res = await fetch(`${API_BASE}/models`, {
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function createModel(payload) {
   const res = await fetch(`${API_BASE}/models`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
@@ -83,26 +99,31 @@ export async function createModel(payload) {
 export async function updateModel(id, payload) {
   const res = await fetch(`${API_BASE}/models/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
 }
 
 export async function deleteModel(id) {
-  const res = await fetch(`${API_BASE}/models/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/models/${id}`, {
+    method: 'DELETE',
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function fetchSizes() {
-  const res = await fetch(`${API_BASE}/sizes`);
+  const res = await fetch(`${API_BASE}/sizes`, {
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
 
 export async function createSize(payload) {
   const res = await fetch(`${API_BASE}/sizes`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
@@ -111,13 +132,16 @@ export async function createSize(payload) {
 export async function updateSize(id, payload) {
   const res = await fetch(`${API_BASE}/sizes/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withBaseHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
 }
 
 export async function deleteSize(id) {
-  const res = await fetch(`${API_BASE}/sizes/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/sizes/${id}`, {
+    method: 'DELETE',
+    headers: withBaseHeaders(),
+  });
   return handleResponse(res);
 }
