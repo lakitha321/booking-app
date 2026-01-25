@@ -38,7 +38,7 @@ export default function AvailabilityView({ models, slots, loading, onRefresh, on
       }
       map.get(label).slots.push(slot)
     })
-    return Array.from(map.values())
+    return Array.from(map.values()).filter((entry) => entry.slots.length > 0)
   }, [models, activeSlots])
 
   return (
