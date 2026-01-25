@@ -6,6 +6,7 @@ import slotsRouter from "./src/routes/slots.js";
 import modelsRouter from "./src/routes/models.js";
 import authRouter from "./src/routes/auth.js";
 import reservationsRouter from "./src/routes/reservations.js";
+import sizesRouter from "./src/routes/sizes.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use("/api/slots", slotsRouter);
 app.use("/api/models", modelsRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/reservations", reservationsRouter);
+app.use("/api/sizes", sizesRouter);
 
 const PORT = process.env.PORT || 5000;
 

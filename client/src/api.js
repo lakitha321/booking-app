@@ -93,3 +93,31 @@ export async function deleteModel(id) {
   const res = await fetch(`${API_BASE}/models/${id}`, { method: 'DELETE' });
   return handleResponse(res);
 }
+
+export async function fetchSizes() {
+  const res = await fetch(`${API_BASE}/sizes`);
+  return handleResponse(res);
+}
+
+export async function createSize(payload) {
+  const res = await fetch(`${API_BASE}/sizes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function updateSize(id, payload) {
+  const res = await fetch(`${API_BASE}/sizes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteSize(id) {
+  const res = await fetch(`${API_BASE}/sizes/${id}`, { method: 'DELETE' });
+  return handleResponse(res);
+}

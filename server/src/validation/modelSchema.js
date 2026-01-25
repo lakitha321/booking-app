@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const modelCreateSchema = z.object({
   name: z.string().trim().min(1, "Model name is required"),
-  nic: z.string().optional().default(""),
+  sizeId: z.string().trim().min(1, "Size is required"),
   notes: z.string().optional().default(""),
 });
 
