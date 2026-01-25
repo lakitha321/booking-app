@@ -13,6 +13,13 @@ function toLocalParts(value) {
   }
 }
 
+function formatModelLabel(model) {
+  if (!model) return ''
+  if (typeof model === 'string') return model
+  const sizeLabel = model.size?.name || 'Unknown size'
+  return `${model.name} - ${sizeLabel}`
+}
+
 export default function SlotForm({
   onSubmit,
   onCancel,
@@ -23,7 +30,7 @@ export default function SlotForm({
   resetSignal,
 }) {
   const [form, setForm] = useState({
-    modelId: '',
+    model: '',
     date: '',
     startTime: '',
     endTime: '',
@@ -37,8 +44,9 @@ export default function SlotForm({
     if (initialData) {
       const startParts = toLocalParts(initialData.startDateTime)
       const endParts = toLocalParts(initialData.endDateTime)
+      const modelValue = formatModelLabel(initialData.model)
       setForm({
-        modelId: initialData.model?._id || initialData.model || '',
+        model: modelValue,
         date: startParts.date,
         startTime: startParts.time,
         endTime: endParts.time,
@@ -46,7 +54,7 @@ export default function SlotForm({
         isActive: Boolean(initialData.isActive),
       })
     } else {
-      setForm({ modelId: '', date: '', startTime: '', endTime: '', notes: '', isActive: true })
+      setForm({ model: '', date: '', startTime: '', endTime: '', notes: '', isActive: true })
     }
     setValidationError('')
   }, [initialData, resetSignal])
@@ -87,14 +95,14 @@ export default function SlotForm({
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
       <div className="form-row">
-        <label htmlFor="modelId">
+        <label htmlFor="model">
           <CalendarIcon size={16} /> Model *
         </label>
         <select
-          id="modelId"
-          name="modelId"
+          id="model"
+          name="model"
           required
-          value={form.modelId}
+          value={form.model}
           onChange={handleChange}
           disabled={!models.length}
         >
@@ -102,8 +110,8 @@ export default function SlotForm({
             {models.length ? 'Select a model' : 'Create a model first'}
           </option>
           {models.map((model) => (
-            <option key={model._id} value={model._id}>
-              {model.name}
+            <option key={model._id} value={formatModelLabel(model)}>
+              {formatModelLabel(model)}
             </option>
           ))}
         </select>

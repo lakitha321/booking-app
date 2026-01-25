@@ -1,6 +1,5 @@
 import express from "express";
 import Slot from "../models/Slot.js";
-import Model from "../models/Model.js";
 import Reservation from "../models/Reservation.js";
 import { slotCreateSchema, slotUpdateSchema } from "../validation/slotSchema.js";
 
@@ -12,10 +11,7 @@ router.post("/", async (req, res) => {
     const parsed = slotCreateSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const { startDateTime, endDateTime, modelId, ...rest } = parsed.data;
-
-    const model = await Model.findById(modelId);
-    if (!model) return res.status(404).json({ error: "Model not found" });
+    const { startDateTime, endDateTime, model, ...rest } = parsed.data;
 
     const start = new Date(startDateTime);
     const end = new Date(endDateTime);
@@ -25,7 +21,7 @@ router.post("/", async (req, res) => {
     // (Optional) prevent overlaps for admin "availability blocks"
     // Uncomment if you want strict non-overlapping admin slots:
     const overlap = await Slot.findOne({
-      model: model._id,
+      model,
       isActive: true,
       $or: [
         { startDateTime: { $lt: end }, endDateTime: { $gt: start } }
@@ -33,8 +29,7 @@ router.post("/", async (req, res) => {
     });
     if (overlap) return res.status(409).json({ error: "Overlaps an existing active slot" });
 
-    const slot = await Slot.create({ ...rest, model: model._id, startDateTime: start, endDateTime: end });
-    await slot.populate("model");
+    const slot = await Slot.create({ ...rest, model, startDateTime: start, endDateTime: end });
     return res.status(201).json(slot);
   } catch (e) {
     return res.status(500).json({ error: "Server error" });
@@ -56,7 +51,7 @@ router.get("/", async (req, res) => {
       if (to) q.startDateTime.$lte = new Date(to);
     }
 
-    const slots = await Slot.find(q).populate("model").sort({ startDateTime: 1 });
+    const slots = await Slot.find(q).sort({ startDateTime: 1 });
 
     if (includeReservations === "true" && slots.length) {
       const slotIds = slots.map((slot) => slot._id);
@@ -90,7 +85,7 @@ router.get("/", async (req, res) => {
 // Read one
 router.get("/:id", async (req, res) => {
   try {
-    const slot = await Slot.findById(req.params.id).populate("model");
+    const slot = await Slot.findById(req.params.id);
     if (!slot) return res.status(404).json({ error: "Not found" });
     return res.json(slot);
   } catch {
@@ -108,13 +103,6 @@ router.put("/:id", async (req, res) => {
 
     const slot = await Slot.findById(req.params.id);
     if (!slot) return res.status(404).json({ error: "Not found" });
-
-    if (update.modelId) {
-      const model = await Model.findById(update.modelId);
-      if (!model) return res.status(404).json({ error: "Model not found" });
-      update.model = model._id;
-    }
-    delete update.modelId;
 
     const nextModel = update.model ?? slot.model;
     const nextStart = update.startDateTime ? new Date(update.startDateTime) : slot.startDateTime;
@@ -138,7 +126,6 @@ router.put("/:id", async (req, res) => {
 
     slot.set({ ...update, startDateTime: nextStart, endDateTime: nextEnd, model: nextModel });
     await slot.save();
-    await slot.populate("model");
 
     return res.json(slot);
   } catch {

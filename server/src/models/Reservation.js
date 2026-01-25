@@ -5,7 +5,7 @@ const ReservationSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     userName: { type: String, required: true, trim: true },
     userEmail: { type: String, required: true, trim: true, lowercase: true },
-    model: { type: mongoose.Schema.Types.ObjectId, ref: "Model", required: true },
+    model: { type: String, required: true, trim: true },
     slot: { type: mongoose.Schema.Types.ObjectId, ref: "Slot", required: true },
     startDateTime: { type: Date, required: true },
     endDateTime: { type: Date, required: true },

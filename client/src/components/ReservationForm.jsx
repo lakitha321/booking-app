@@ -32,9 +32,9 @@ export default function ReservationForm({
         .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))
         .map((slot) => ({
           id: slot._id,
-          label: `${slot.model?.name || 'Model'} — ${new Date(slot.startDateTime).toLocaleString()} → ${new Date(
-            slot.endDateTime
-          ).toLocaleString()}`,
+          label: `${typeof slot.model === 'string' ? slot.model : slot.model?.name || 'Model'} — ${new Date(
+            slot.startDateTime
+          ).toLocaleString()} → ${new Date(slot.endDateTime).toLocaleString()}`,
         })),
     [slots]
   )

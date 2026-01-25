@@ -27,7 +27,7 @@ export default function SlotTable({ slots, onEdit, onDelete }) {
         <tbody>
           {slots.map((slot) => (
             <tr key={slot._id}>
-              <td>{slot.model?.name || '—'}</td>
+              <td>{typeof slot.model === 'string' ? slot.model : slot.model?.name || '—'}</td>
               <td>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <ClockIcon size={16} /> {formatDate(slot.startDateTime)}
