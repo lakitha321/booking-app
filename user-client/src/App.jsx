@@ -356,7 +356,9 @@ function AvailabilityView({ models, slots, loading, onRefresh, onReserve, myRese
                           return (
                             <div key={res._id} className={isMine ? 'reservation-chip mine' : 'reservation-chip'}>
                               <span className="mono">{formatTimeRange(res.startDateTime, res.endDateTime)}</span>
-                              <span className="pill neutral">{isMine ? 'Your reservation' : 'Booked'}</span>
+                              {isMine === false && (
+                                <span className="pill neutral">{'Booked'}</span>
+                              )}
                               {isMine && (
                                 <button
                                   className="btn tertiary"
